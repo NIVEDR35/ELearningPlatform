@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}Recommendations - Adaptive Learning{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card mb-3">
+        <h1 class="card-title">Personalized Course Recommendations</h1>
+        <p class="card-subtitle">Curated just for you based on your learning style, performance, and content balance</p>
+    </div>
+
+    <!-- NEW: Content Bias Analysis -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Content Balance Analysis</h2>
+            <p class="card-subtitle">Understanding your learning content distribution</p>
+        </div>
+        <div id="bias-analysis-container">
+            <div class="pulse text-center" style="padding: 40px;">Analyzing content balance...</div>
+        </div>
+    </div>
+
+    <!-- NEW: Bias-Aware Recommendations -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Balanced Recommendations</h2>
+            <p class="card-subtitle">Courses selected to diversify and balance your learning</p>
+        </div>
+        <div id="bias-recommendations-container" class="grid grid-3">
+            <div class="text-center pulse" style="grid-column: 1 / -1; padding: 40px;">
+                Loading bias-aware recommendations...
+            </div>
+        </div>
+    </div>
+
+    <!-- Regular Recommendations -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">All Recommendations</h2>
+            <p class="card-subtitle">Based on your learning style and goals</p>
+        </div>
+        <div id="recommendations-container" class="grid grid-3">
+            <div class="text-center pulse" style="grid-column: 1 / -1; padding: 60px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">&#129302;</div>
+                <p style="color: var(--gray);">Generating personalized recommendations...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bias-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .bias-stat-item {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+    }
+    .bias-stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    .bias-stat-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .distribution-bar {
+        height: 20px;
+        background: rgba(0,0,0,0.1);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .distribution-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+    .fill-video { background: linear-gradient(90deg, #667eea, #764ba2); }
+    .fill-document { background: linear-gradient(90deg, #f093fb, #f5576c); }
+    .fill-interactive { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+    .fill-course { background: linear-gradient(90deg, #43e97b, #38f9d7); }
+
+    .bias-alert {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+        color: #856404;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        border-left: 4px solid #ffc107;
+    }
+    .bias-good {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        color: #155724;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        border-left: 4px solid #28a745;
+    }
+
+    .underexposed-tag {
+        display: inline-block;
+        background: rgba(0, 123, 255, 0.2);
+        color: #007bff;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        margin: 4px;
+    }
+
+    .bias-correction-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        margin-bottom: 8px;
+    }
+
+    .recommendation-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .recommendation-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+    }
+    .recommendation-score {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+    .course-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+    .course-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        line-height: 1.5;
+    }
+    .recommendation-reasoning {
+        font-size: 12px;
+        color: var(--primary);
+        font-style: italic;
+    }
+    .difficulty-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .difficulty-badge.BEGINNER { background: #d4edda; color: #155724; }
+    .difficulty-badge.INTERMEDIATE { background: #fff3cd; color: #856404; }
+    .difficulty-badge.ADVANCED { background: #f8d7da; color: #721c24; }
+</style>
+
+<script>
+    let currentUserId = 1;
+
+    async function init() {
+        try {
+            const userResponse = await fetch('/api/auth/me');
+            const userData = await userResponse.json();
+            currentUserId = userData.id;
+
+            // Load all data
+            loadBiasAnalysis();
+            loadBiasAwareRecommendations();
+            loadRecommendations();
+        } catch (error) {
+            console.error('Error initializing:', error);
+        }
+    }
+
+    // NEW: Load Content Bias Analysis
+    async function loadBiasAnalysis() {
+        try {
+            const response = await fetch(`/api/content/bias/${currentUserId}`);
+            const data = await response.json();
+
+            let html = `
+                <div class="bias-stat-grid">
+                    <div class="bias-stat-item">
+                        <div class="bias-stat-value">${Math.round(data.vark_content_alignment || 0)}%</div>
+                        <div class="bias-stat-label">VARK Alignment</div>
+                    </div>
+                    <div class="bias-stat-item">
+                        <div class="bias-stat-value">${Math.round(data.topic_diversity_score || 0)}%</div>
+                        <div class="bias-stat-label">Topic Diversity</div>
+                    </div>
+                    <div class="bias-stat-item">
+                        <div class="bias-stat-value">${Math.round(data.difficulty_appropriateness || 0)}%</div>
+                        <div class="bias-stat-label">Difficulty Match</div>
+                    </div>
+                    <div class="bias-stat-item">
+                        <div class="bias-stat-value">${data.total_interactions || 0}</div>
+                        <div class="bias-stat-label">Total Interactions</div>
+                    </div>
+                </div>
+            `;
+
+            // Content Distribution
+            if (data.content_distribution) {
+                html += '<h4 style="margin-bottom: 16px;">Content Type Distribution</h4>';
+                const contentTypes = {
+                    video: { label: 'Video', icon: '&#128249;' },
+                    document: { label: 'Document', icon: '&#128196;' },
+                    interactive: { label: 'Interactive', icon: '&#127918;' },
+                    course: { label: 'Course', icon: '&#128218;' }
+                };
+
+                for (const [type, percentage] of Object.entries(data.content_distribution)) {
+                    const info = contentTypes[type] || { label: type, icon: '&#128206;' };
+                    const isOverexposed = percentage > 60;
+                    const isUnderexposed = percentage < 15;
+                    const statusColor = isOverexposed ? '#dc3545' : isUnderexposed ? '#007bff' : '#28a745';
+
+                    html += `
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>${info.icon} ${info.label}</span>
+                                <span style="font-weight: 600; color: ${statusColor};">${Math.round(percentage)}%</span>
+                            </div>
+                            <div class="distribution-bar">
+                                <div class="distribution-fill fill-${type}" style="width: ${Math.min(percentage, 100)}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Bias Indicators
+            if (data.bias_indicators) {
+                if (data.bias_indicators.needs_more_variety) {
+                    html += `
+                        <div class="bias-alert">
+                            <strong>&#9888; Content Variety Needed</strong>
+                            <p style="margin-top: 8px;">Try exploring different types of learning content for a more balanced experience.</p>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="bias-good">
+                            <strong>&#10004; Good Content Balance</strong>
+                            <p style="margin-top: 8px;">You're maintaining a healthy variety in your learning content.</p>
+                        </div>
+                    `;
+                }
+
+                if (data.bias_indicators.underexposed_content_types && data.bias_indicators.underexposed_content_types.length > 0) {
+                    html += '<div style="margin-top: 16px;"><strong>Try more of:</strong><div style="margin-top: 8px;">';
+                    data.bias_indicators.underexposed_content_types.forEach(type => {
+                        html += `<span class="underexposed-tag">${type}</span>`;
+                    });
+                    html += '</div></div>';
+                }
+            }
+
+            // Recommendations from bias analysis
+            if (data.recommendations && data.recommendations.length > 0) {
+                html += '<div style="margin-top: 24px;"><h4>Suggestions</h4>';
+                data.recommendations.forEach(rec => {
+                    const priorityColor = rec.priority === 'HIGH' ? '#dc3545' : rec.priority === 'MEDIUM' ? '#ffc107' : '#28a745';
+                    html += `
+                        <div style="background: rgba(99,102,241,0.05); padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid ${priorityColor};">
+                            <strong>${rec.message}</strong>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">${rec.action}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            document.getElementById('bias-analysis-container').innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading bias analysis:', error);
+            document.getElementById('bias-analysis-container').innerHTML = '<p class="text-gray">Unable to load content bias analysis.</p>';
+        }
+    }
+
+    // NEW: Load Bias-Aware Recommendations
+    async function loadBiasAwareRecommendations() {
+        try {
+            const response = await fetch(`/api/recommendations/bias-aware/${currentUserId}?count=6`);
+            const data = await response.json();
+
+            const container = document.getElementById('bias-recommendations-container');
+
+            if (!data.recommendations || data.recommendations.length === 0) {
+                container.innerHTML = '<p class="text-gray text-center" style="grid-column: 1 / -1;">No bias-aware recommendations available yet.</p>';
+                return;
+            }
+
+            let html = '';
+            data.recommendations.forEach(rec => {
+                const course = rec.course;
+                html += `
+                    <div class="recommendation-card" onclick="window.location.href='/course/${course.id}'">
+                        ${rec.bias_correction && rec.bias_correction.length > 0 ?
+                            rec.bias_correction.map(bc => `<span class="bias-correction-badge">${bc}</span>`).join(' ') : ''}
+                        <div class="recommendation-score">${Math.round(rec.score || 0)}% Match</div>
+                        <h3 class="course-title">${course.title}</h3>
+                        <p class="course-description">${(course.description || '').substring(0, 100)}...</p>
+                        ${rec.bias_boost > 0 ? `<p style="color: #28a745; font-size: 12px;">&#9650; +${rec.bias_boost} bias balance boost</p>` : ''}
+                        <div style="margin-top: 12px;">
+                            <span class="difficulty-badge ${course.difficulty}">${course.difficulty}</span>
+                            <span style="color: var(--gray); font-size: 12px; margin-left: 8px;">${course.duration_hours || 0}h</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Show bias corrections applied
+            if (data.bias_corrections_applied > 0) {
+                const header = document.querySelector('#bias-recommendations-container').previousElementSibling;
+                if (header) {
+                    header.querySelector('.card-subtitle').innerHTML += ` <span style="color: var(--primary);">(${data.bias_corrections_applied} bias corrections applied)</span>`;
+                }
+            }
+
+        } catch (error) {
+            console.error('Error loading bias-aware recommendations:', error);
+            document.getElementById('bias-recommendations-container').innerHTML = '<p class="text-gray text-center" style="grid-column: 1 / -1;">Unable to load recommendations.</p>';
+        }
+    }
+
+    // Regular Recommendations
+    async function loadRecommendations() {
+        try {
+            const response = await fetch(`/api/recommendations/${currentUserId}?count=12`);
+            const data = await response.json();
+
+            displayRecommendations(data.recommendations || []);
+        } catch (error) {
+            console.error('Error loading recommendations:', error);
+            document.getElementById('recommendations-container').innerHTML = `
+                <div class="text-center" style="grid-column: 1 / -1; padding: 60px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">&#128532;</div>
+                    <p style="color: var(--gray);">Failed to load recommendations</p>
+                </div>
+            `;
+        }
+    }
+
+    function displayRecommendations(recommendations) {
+        const container = document.getElementById('recommendations-container');
+
+        if (!recommendations || recommendations.length === 0) {
+            container.innerHTML = `
+                <div class="text-center" style="grid-column: 1 / -1; padding: 60px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">&#127919;</div>
+                    <p style="color: var(--gray); margin-bottom: 16px;">Start learning to get personalized recommendations!</p>
+                    <a href="/courses" class="btn btn-primary">Browse Courses</a>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = recommendations.map(rec => `
+            <div class="recommendation-card" onclick="window.location.href='/course/${rec.course.id}'">
+                <div class="recommendation-score">${Math.round(rec.score)}% Match</div>
+                <h3 class="course-title">${rec.course.title}</h3>
+                <p class="course-description">${rec.course.description.substring(0, 120)}...</p>
+                <p class="recommendation-reasoning">${rec.reasoning}</p>
+                <div class="course-stats" style="margin-top: 12px;">
+                    <span class="difficulty-badge ${rec.course.difficulty}">${rec.course.difficulty}</span>
+                    <span style="color: var(--gray); font-size: 12px;">${rec.course.duration_hours}h</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    init();
+</script>
+{% endblock %}

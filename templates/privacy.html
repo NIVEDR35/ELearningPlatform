@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Settings - Adaptive Learning{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card mb-3">
+        <h1 class="card-title">🔒 Privacy & Data Control</h1>
+        <p class="card-subtitle">You have full control over your data</p>
+    </div>
+
+    <!-- Consent Management -->
+    <div class="card mb-3">
+        <h2 class="card-title">Consent Preferences</h2>
+        <p class="text-gray mb-2">Control what data we can collect and how we use it</p>
+
+        <div id="consent-container">
+            <div class="pulse">Loading your preferences...</div>
+        </div>
+    </div>
+
+    <!-- Data Export -->
+    <div class="card mb-3">
+        <h2 class="card-title">Export Your Data</h2>
+        <p class="text-gray mb-2">Download all your data in JSON format (GDPR compliant)</p>
+        <button onclick="exportData()" class="btn btn-primary">📥 Export My Data</button>
+    </div>
+
+    <!-- Delete Account -->
+    <div class="card" style="border-left: 4px solid var(--danger);">
+        <h2 class="card-title" style="color: var(--danger);">Danger Zone</h2>
+        <p class="text-gray mb-2">Permanently delete your account and all associated data</p>
+        <button onclick="deleteAccount()" class="btn" style="background: var(--danger); color: white;">
+            🗑️ Delete My Account
+        </button>
+    </div>
+</div>
+
+<script>
+    let userId = null;
+
+    async function loadPrivacySettings() {
+        try {
+            const userResponse = await fetch('/api/auth/me');
+            const userData = await userResponse.json();
+            userId = userData.id;
+
+            const response = await fetch(`/api/privacy/consent/${userId}`);
+            const consents = await response.json();
+
+            displayConsents(consents);
+        } catch (error) {
+            console.error('Error loading privacy settings:', error);
+        }
+    }
+
+    function displayConsents(consents) {
+        const container = document.getElementById('consent-container');
+
+        const consentTypes = [
+            { type: 'analytics', label: 'Analytics & Tracking', description: 'Track your learning behavior to infer learning style' },
+            { type: 'personalization', label: 'Personalization', description: 'Use your data to personalize recommendations' },
+            { type: 'data_sharing', label: 'Data Sharing', description: 'Share anonymized data for research' },
+            { type: 'marketing', label: 'Marketing Communications', description: 'Receive course recommendations and updates' }
+        ];
+
+        let html = '';
+        consentTypes.forEach(ct => {
+            const consent = consents.find(c => c.consent_type === ct.type) || {};
+            const isGranted = consent.granted || false;
+
+            html += `
+            <div class="consent-item">
+                <div>
+                    <strong>${ct.label}</strong>
+                    <p style="font-size: 13px; color: var(--gray); margin-top: 4px;">${ct.description}</p>
+                </div>
+                <div class="toggle ${isGranted ? 'active' : ''}" 
+                     onclick="toggleConsent('${ct.type}', this)">
+                </div>
+            </div>
+        `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    async function toggleConsent(type, element) {
+        try {
+            const isGranted = element.classList.contains('active');
+
+            const response = await fetch('/api/privacy/consent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userId,
+                    consent_type: type,
+                    granted: !isGranted
+                })
+            });
+
+            if (response.ok) {
+                element.classList.toggle('active');
+                showNotification(`${type} consent ${!isGranted ? 'granted' : 'revoked'}`, 'success');
+            }
+        } catch (error) {
+            console.error('Error updating consent:', error);
+            showNotification('Failed to update consent', 'error');
+        }
+    }
+
+    async function exportData() {
+        try {
+            const response = await fetch(`/api/privacy/export/${userId}`);
+            const data = await response.json();
+
+            // Create download
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `my-learning-data-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+
+            showNotification('Data exported successfully!', 'success');
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            showNotification('Failed to export data', 'error');
+        }
+    }
+
+    async function deleteAccount() {
+        if (!confirm('Are you sure? This action cannot be undone. All your data will be permanently deleted.')) {
+            return;
+        }
+
+        if (!confirm('This is your last chance. Really delete everything?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/privacy/delete/${userId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                showNotification('Account deleted. Goodbye!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            showNotification('Failed to delete account', 'error');
+        }
+    }
+
+    loadPrivacySettings();
+</script>
+{% endblock %}

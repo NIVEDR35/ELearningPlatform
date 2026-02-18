@@ -1,0 +1,1242 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} - Adaptive Learning{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Course Header -->
+    <div class="card mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div style="padding: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <span class="badge"
+                        style="background: rgba(255,255,255,0.2); color: white; margin-bottom: 16px; display: inline-block;">
+                        {{ course.difficulty }}
+                    </span>
+                    <h1 style="color: white; margin-bottom: 16px; font-size: 36px;">{{ course.title }}</h1>
+                    <p style="font-size: 18px; opacity: 0.9; max-width: 800px; line-height: 1.6;">
+                        {{ course.description }}
+                    </p>
+                    <div style="margin-top: 24px; display: flex; gap: 24px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span>⏱️</span>
+                            <span>{{ course.duration_hours }} Hours</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span>📚</span>
+                            <span>{{ modules|length }} Modules</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span>👥</span>
+                            <span>{{ course.enrolled_count }} Enrolled</span>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    style="background: white; padding: 24px; border-radius: 12px; color: var(--text); min-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                    <h3 style="margin-bottom: 16px;">Start Learning</h3>
+                    <div class="progress-bar mb-3">
+                        <div class="progress-fill" style="width: {{ progress }}%"></div>
+                    </div>
+                    <p class="text-gray mb-3" style="font-size: 14px;">{{ progress }}% Complete</p>
+                    <button class="btn btn-primary" style="width: 100%; justify-content: center;" {% if modules and
+                        modules[0].lessons %} onclick="playLesson({{ modules[0].lessons[0].id }})" {% endif %}>
+                        {{ 'Continue Course' if progress > 0 else 'Start Course' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+        <!-- Course Content -->
+        <div>
+            <div class="card mb-3">
+                <h2 class="card-title">Course Content</h2>
+                <div class="accordion">
+                    {% for module in modules %}
+                    <div class="module-item"
+                        style="border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden;">
+                        <div class="module-header"
+                            style="background: var(--light); padding: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                            onclick="toggleModule({{ loop.index }})">
+                            <h3 style="font-size: 18px; margin: 0;">Module {{ loop.index }}: {{ module.title }}</h3>
+                            <span>▼</span>
+                        </div>
+                        <div id="module-{{ loop.index }}" class="module-content" style="padding: 16px;">
+                            {% if module.lessons %}
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                {% for lesson in module.lessons %}
+                                {% set lesson_status = lesson_progress.get(lesson.id, {}) if lesson_progress else {} %}
+                                {% set is_completed = lesson_status.get('status') == 'COMPLETED' %}
+                                <div class="lesson-item {% if is_completed %}lesson-completed{% endif %}"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; background: {% if is_completed %}rgba(16, 185, 129, 0.1){% else %}white{% endif %}; border: 1px solid {% if is_completed %}var(--success){% else %}var(--border){% endif %};">
+                                    <div
+                                        style="width: 32px; height: 32px; background: {% if is_completed %}var(--success){% else %}var(--light){% endif %}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: {% if is_completed %}white{% else %}var(--primary){% endif %};">
+                                        {% if is_completed %}✓{% else %}▶{% endif %}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <h4 style="margin: 0; font-size: 16px;">{{ lesson.title }}</h4>
+                                        <p style="margin: 4px 0 0; font-size: 13px; color: var(--gray);">
+                                            {{ lesson.duration_minutes }} mins
+                                            {% if is_completed %}<span style="color: var(--success); margin-left: 8px;">✓ Completed</span>{% endif %}
+                                        </p>
+                                    </div>
+                                    <button class="btn {% if is_completed %}btn-success{% else %}btn-outline{% endif %} btn-sm"
+                                        onclick="playLesson({{ lesson.id }})">
+                                        {% if is_completed %}Review{% else %}Start{% endif %}
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-gray">No lessons in this module yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div>
+            <!-- Learning Objectives -->
+            <div class="card mb-3">
+                <h3 class="card-title" style="font-size: 20px;">What you'll learn</h3>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for objective in objectives %}
+                    <li style="display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;">
+                        <span style="color: var(--success);">✓</span>
+                        <span>{{ objective }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Instructor (AI) -->
+            <div class="card">
+                <h3 class="card-title" style="font-size: 20px;">Instructor</h3>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div
+                        style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                        🤖
+                    </div>
+                    <div>
+                        <h4 style="margin: 0;">AI Instructor</h4>
+                        <p class="text-gray" style="margin: 4px 0 0; font-size: 14px;">Adaptive Learning System</p>
+                    </div>
+                </div>
+                <p style="margin-top: 16px; font-size: 14px; color: var(--gray);">
+                    This course is dynamically generated and adapted to your learning style by our advanced AI system.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Multi-Modal Lesson Modal -->
+<div id="videoModal" class="modal">
+    <div class="modal-content lesson-modal-content">
+        <!-- Close and Fullscreen buttons -->
+        <div class="lesson-modal-header">
+            <h2 id="lessonTitle" class="lesson-modal-title">Lesson Title</h2>
+            <div class="lesson-modal-actions">
+                <button onclick="toggleLessonFullscreen()" class="lesson-action-btn" title="Toggle Fullscreen">
+                    <span id="lesson-fullscreen-icon">⛶</span>
+                </button>
+                <button onclick="closeVideoModal()" class="lesson-action-btn lesson-close-btn" title="Close">
+                    &times;
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Tabs -->
+        <div class="lesson-tabs-container">
+            <button onclick="showTab('video')" id="tab-video" class="lesson-tab active">🎥 Video</button>
+            <button onclick="showTab('content')" id="tab-content" class="lesson-tab">📝 Content</button>
+            <button onclick="showTab('assignment')" id="tab-assignment" class="lesson-tab" style="display:none;">✍️ Assignment</button>
+            <button onclick="showTab('code')" id="tab-code" class="lesson-tab" style="display:none;">💻 Code</button>
+            <button onclick="showTab('quiz')" id="tab-quiz" class="lesson-tab" style="display:none;">❓ Quiz</button>
+            <button onclick="showTab('resources')" id="tab-resources" class="lesson-tab" style="display:none;">📚 Resources</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="lesson-tab-content">
+            <!-- Video Tab -->
+            <div id="content-video" class="tab-content">
+                <div class="video-container">
+                    <iframe id="videoPlayer" class="video-player-iframe"
+                        src="" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
+                </div>
+
+                <!-- Video Quiz Section - Appears after video -->
+                <div id="video-quiz-section" style="margin-top: 24px; display: none;">
+                    <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(118, 75, 162, 0.1)); padding: 24px; border-radius: 16px; border: 2px solid var(--primary);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <div>
+                                <h3 style="margin: 0; color: var(--primary);">📝 Quick Knowledge Check</h3>
+                                <p style="margin: 4px 0 0; font-size: 14px; color: var(--gray);">Answer these questions to reinforce what you learned</p>
+                            </div>
+                            <div id="video-quiz-timer" style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-family: monospace; font-size: 18px;">
+                                2:00
+                            </div>
+                        </div>
+                        <div id="video-quiz-questions"></div>
+                        <div id="video-quiz-results" style="display: none;"></div>
+                        <div style="margin-top: 20px; display: flex; gap: 12px;">
+                            <button id="submit-video-quiz-btn" onclick="submitVideoQuiz()" class="btn btn-primary" style="flex: 1;">
+                                ✓ Submit Answers
+                            </button>
+                            <button id="skip-video-quiz-btn" onclick="skipVideoQuiz()" class="btn btn-outline">
+                                Skip for now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Tab -->
+            <div id="content-content" class="tab-content" style="display:none;">
+                <div id="lessonContent" style="line-height: 1.8; color: var(--text);"></div>
+            </div>
+
+            <!-- Assignment Tab -->
+            <div id="content-assignment" class="tab-content" style="display:none;">
+                <div
+                    style="background: var(--light); padding: 20px; border-radius: 12px; border-left: 4px solid var(--primary);">
+                    <h3 style="margin-top: 0;">✍️ Hands-On Assignment</h3>
+                    <div id="lessonAssignment"></div>
+                    <button onclick="markAssignmentComplete()" class="btn btn-primary"
+                        style="margin-top: 20px;">Complete Assignment</button>
+                </div>
+            </div>
+
+            <!-- Code Tab -->
+            <div id="content-code" class="tab-content" style="display:none;">
+                <div
+                    style="background: #1e1e1e; padding: 20px; border-radius: 12px; color: #d4d4d4; font-family: 'Courier New', monospace;">
+                    <h3 style="color: #4ec9b0; margin-top: 0;">💻 Code Example</h3>
+                    <pre id="lessonCode" style="overflow-x: auto; white-space: pre-wrap;"></pre>
+                    <button onclick="copyCode()" class="btn btn-outline" style="margin-top: 10px;">📋 Copy Code</button>
+                </div>
+            </div>
+
+            <!-- Quiz Tab -->
+            <div id="content-quiz" class="tab-content" style="display:none;">
+                <div id="lessonQuiz"></div>
+            </div>
+
+            <!-- Resources Tab -->
+            <div id="content-resources" class="tab-content" style="display:none;">
+                <div style="background: var(--light); padding: 20px; border-radius: 12px;">
+                    <h3 style="margin-top: 0;">📚 Additional Resources</h3>
+                    <div id="lessonResources"></div>
+                    <div id="lessonInteractive" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+
+            <!-- Lesson Completion Section -->
+            <div style="margin-top: 24px; padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(56, 249, 215, 0.1)); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h4 style="margin: 0 0 4px 0; color: var(--success);">✅ Finished with this lesson?</h4>
+                        <p style="margin: 0; font-size: 14px; color: var(--gray);">Mark it complete to track your progress</p>
+                    </div>
+                    <button onclick="markLessonComplete()" class="btn btn-success" style="padding: 12px 24px; font-size: 16px;">
+                        ✓ Mark as Complete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.9);
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .lesson-modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 0;
+        border-radius: 16px;
+        position: relative;
+        width: 95vw;
+        max-width: 1400px;
+        max-height: 95vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Lesson Modal Header */
+    .lesson-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .lesson-modal-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .lesson-modal-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .lesson-action-btn {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+    }
+
+    .lesson-action-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+    }
+
+    .lesson-close-btn {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    /* Lesson Tabs Container */
+    .lesson-tabs-container {
+        display: flex;
+        border-bottom: 2px solid var(--light);
+        padding: 0 24px;
+        gap: 8px;
+        background: #f8fafc;
+        overflow-x: auto;
+    }
+
+    /* Lesson Tab Styles */
+    .lesson-tab {
+        padding: 14px 24px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--gray);
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+        white-space: nowrap;
+    }
+
+    .lesson-tab:hover {
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .lesson-tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+        background: white;
+    }
+
+    /* Lesson Tab Content */
+    .lesson-tab-content {
+        padding: 24px;
+        flex: 1;
+        overflow-y: auto;
+        background: white;
+    }
+
+    .tab-content {
+        animation: fadeIn 0.3s;
+    }
+
+    /* Video Container - Larger and Better */
+    .video-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        height: 0;
+        overflow: hidden;
+        border-radius: 12px;
+        background: #000;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .video-player-iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Fullscreen styles for lesson modal */
+    .lesson-modal-content.fullscreen-mode {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    .lesson-modal-content.fullscreen-mode .video-container {
+        padding-bottom: 0;
+        height: calc(100vh - 180px);
+    }
+
+    .lesson-modal-content.fullscreen-mode .video-player-iframe {
+        position: relative;
+        height: 100%;
+    }
+
+    /* Native fullscreen support */
+    .modal:fullscreen,
+    .modal:-webkit-full-screen,
+    .modal:-moz-full-screen {
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    .modal:fullscreen .lesson-modal-content,
+    .modal:-webkit-full-screen .lesson-modal-content,
+    .modal:-moz-full-screen .lesson-modal-content {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .lesson-modal-content {
+            width: 100vw;
+            max-height: 100vh;
+            border-radius: 0;
+        }
+
+        .lesson-modal-header {
+            padding: 16px;
+        }
+
+        .lesson-modal-title {
+            font-size: 18px;
+        }
+
+        .lesson-tabs-container {
+            padding: 0 16px;
+        }
+
+        .lesson-tab {
+            padding: 12px 16px;
+            font-size: 14px;
+        }
+
+        .lesson-tab-content {
+            padding: 16px;
+        }
+    }
+</style>
+</div>
+
+<script>
+    let currentLesson = null;
+    let currentUserId = null;
+    const currentCourseId = {{ course.id }};
+
+    // Video Quiz Variables
+    let videoQuizQuestions = [];
+    let videoQuizAnswers = {};
+    let videoQuizTimer = null;
+    let videoQuizTimeRemaining = 120; // 2 minutes
+    const VIDEO_QUIZ_TIME = 120;
+
+    // Initialize - get current user
+    async function initPage() {
+        try {
+            const response = await fetch('/api/auth/me');
+            if (response.ok) {
+                const userData = await response.json();
+                currentUserId = userData.id;
+            }
+        } catch (error) {
+            console.error('Error getting user:', error);
+        }
+    }
+
+    // Initialize on page load
+    initPage();
+
+    function toggleModule(index) {
+        const content = document.getElementById(`module-${index}`);
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+        } else {
+            content.style.display = 'none';
+        }
+    }
+
+    async function playLesson(lessonId) {
+        try {
+            // Fetch lesson details
+            const response = await fetch(`/api/lessons/${lessonId}`);
+            const lesson = await response.json();
+
+            currentLesson = lesson;
+
+            // Show modal
+            const modal = document.getElementById('videoModal');
+            modal.style.display = 'flex';
+
+            // Set title
+            document.getElementById('lessonTitle').innerText = lesson.title;
+
+            // Populate video tab
+            if (lesson.video_id) {
+                document.getElementById('videoPlayer').src = `https://www.youtube.com/embed/${lesson.video_id}?autoplay=1`;
+            }
+
+            // Populate content tab
+            document.getElementById('lessonContent').innerHTML = lesson.content || 'No content available.';
+
+            // Show/hide and populate assignment tab
+            if (lesson.assignment) {
+                document.getElementById('tab-assignment').style.display = 'block';
+                document.getElementById('lessonAssignment').innerHTML = lesson.assignment;
+            } else {
+                document.getElementById('tab-assignment').style.display = 'none';
+            }
+
+            // Show/hide and populate code tab
+            if (lesson.code_example) {
+                document.getElementById('tab-code').style.display = 'block';
+                document.getElementById('lessonCode').textContent = lesson.code_example;
+            } else {
+                document.getElementById('tab-code').style.display = 'none';
+            }
+
+            // Show/hide and populate quiz tab
+            if (lesson.quiz_questions && lesson.quiz_questions.length > 0) {
+                document.getElementById('tab-quiz').style.display = 'block';
+                displayQuiz(lesson.quiz_questions);
+            } else {
+                document.getElementById('tab-quiz').style.display = 'none';
+            }
+
+            // Show/hide and populate resources tab
+            if (lesson.document_url || lesson.interactive_element) {
+                document.getElementById('tab-resources').style.display = 'block';
+                let resourcesHTML = '';
+                if (lesson.document_url) {
+                    resourcesHTML += `<p><strong>📄 Recommended Reading:</strong><br>${lesson.document_url}</p>`;
+                }
+                document.getElementById('lessonResources').innerHTML = resourcesHTML;
+
+                let interactiveHTML = '';
+                if (lesson.interactive_element) {
+                    interactiveHTML += `<div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;"><h4 style="margin-top:0;">🎮 Interactive Challenge</h4><p>${lesson.interactive_element}</p></div>`;
+                }
+                document.getElementById('lessonInteractive').innerHTML = interactiveHTML;
+            } else {
+                document.getElementById('tab-resources').style.display = 'none';
+            }
+
+            // Track lesson opening and video watch
+            if (lesson.video_id) {
+                trackInteraction('VIDEO_WATCH', 'VIDEO', lesson.video_id, lesson.title);
+            }
+
+            // Track content view when lesson opens
+            trackInteraction('DOCUMENT_READ', 'LESSON', lesson.id, lesson.title);
+
+            // Setup video quiz trigger
+            setupVideoQuizTrigger();
+
+            // Reset video quiz state
+            hideVideoQuiz();
+
+        } catch (error) {
+            console.error('Error loading lesson:', error);
+            alert('Failed to load lesson');
+        }
+    }
+
+    function showTab(tabName) {
+        // Hide all tabs
+        const tabs = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => tab.style.display = 'none');
+
+        // Remove active class from all tab buttons
+        const tabButtons = document.querySelectorAll('.lesson-tab');
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+
+        // Show selected tab
+        document.getElementById(`content-${tabName}`).style.display = 'block';
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+
+        // Track interaction based on tab
+        if (currentLesson) {
+            if (tabName === 'content') {
+                trackInteraction('DOCUMENT_READ', 'LESSON', currentLesson.id, currentLesson.title);
+            } else if (tabName === 'code') {
+                trackInteraction('CODE_EXAMPLE_VIEW', 'LESSON', currentLesson.id, currentLesson.title);
+            } else if (tabName === 'resources') {
+                trackInteraction('DOCUMENT_OPEN', 'LESSON', currentLesson.id, currentLesson.title);
+            } else if (tabName === 'quiz') {
+                // Track quiz viewing - contributes to Kinesthetic (K) and Reading (R)
+                trackInteraction('QUIZ_ATTEMPT', 'QUIZ', currentLesson.id, currentLesson.title);
+            } else if (tabName === 'assignment') {
+                // Track assignment viewing - contributes to Kinesthetic (K) and Reading (R)
+                trackInteraction('ASSIGNMENT_COMPLETE', 'ASSIGNMENT', currentLesson.id, currentLesson.title);
+            }
+        }
+    }
+
+    function displayQuiz(questions) {
+        let html = '';
+        questions.forEach((q, index) => {
+            html += `
+                <div style="background: var(--light); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h4 style="margin-top: 0;">Question ${index + 1}</h4>
+                    <p style="font-size: 16px; margin-bottom: 16px;">${q.question}</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        ${q.options.map((opt, optIndex) => `
+                            <button class="quiz-option" onclick="checkAnswer(${index}, ${optIndex}, ${q.correct_answer}, '${q.explanation}')" 
+                                style="padding: 12px; border: 2px solid var(--border); border-radius: 8px; background: white; text-align: left; cursor: pointer; transition: all 0.3s;">
+                                ${String.fromCharCode(65 + optIndex)}. ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="quiz-feedback-${index}" style="margin-top: 12px;"></div>
+                </div>
+            `;
+        });
+        document.getElementById('lessonQuiz').innerHTML = html;
+    }
+
+    function checkAnswer(questionIndex, selectedOption, correctAnswer, explanation) {
+        const feedback = document.getElementById(`quiz-feedback-${questionIndex}`);
+        if (selectedOption === correctAnswer) {
+            feedback.innerHTML = `<div style="background: #d1fae5; color: #065f46; padding: 12px; border-radius: 8px;">✅ Correct! ${explanation}</div>`;
+        } else {
+            feedback.innerHTML = `<div style="background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px;">❌ Incorrect. ${explanation}</div>`;
+        }
+
+        // Track quiz attempt
+        if (currentLesson) {
+            trackInteraction('QUIZ_ATTEMPT', 'LESSON', currentLesson.id, currentLesson.title);
+        }
+    }
+
+    function markAssignmentComplete() {
+        if (currentLesson) {
+            // Track with ASSIGNMENT resource type for proper VARK scoring (K+4, R+2)
+            trackInteraction('ASSIGNMENT_COMPLETE', 'ASSIGNMENT', currentLesson.id, currentLesson.title);
+            alert('Assignment marked as complete! Great job! 🎉');
+        }
+    }
+
+    function copyCode() {
+        const code = document.getElementById('lessonCode').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            alert('Code copied to clipboard!');
+        });
+    }
+
+    function closeVideoModal() {
+        const modal = document.getElementById('videoModal');
+        modal.style.display = 'none';
+        document.getElementById('videoPlayer').src = '';
+        currentLesson = null;
+
+        // Exit fullscreen if active
+        const modalContent = document.querySelector('.lesson-modal-content');
+        if (modalContent) {
+            modalContent.classList.remove('fullscreen-mode');
+        }
+        exitLessonFullscreen();
+    }
+
+    function toggleLessonFullscreen() {
+        const modal = document.getElementById('videoModal');
+        const modalContent = document.querySelector('.lesson-modal-content');
+        const icon = document.getElementById('lesson-fullscreen-icon');
+
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            // Enter fullscreen
+            if (modal.requestFullscreen) {
+                modal.requestFullscreen();
+            } else if (modal.webkitRequestFullscreen) {
+                modal.webkitRequestFullscreen();
+            }
+            modalContent.classList.add('fullscreen-mode');
+            if (icon) icon.textContent = '⛶';
+        } else {
+            // Exit fullscreen
+            exitLessonFullscreen();
+            modalContent.classList.remove('fullscreen-mode');
+            if (icon) icon.textContent = '⛶';
+        }
+    }
+
+    function exitLessonFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
+    }
+
+    function trackInteraction(interactionType, resourceType, resourceId, title) {
+        // Track for VARK learning style
+        fetch('/api/analytics/track', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                interaction_type: interactionType,
+                resource_type: resourceType,
+                resource_id: resourceId,
+                duration: 60,
+                metadata: { title: title }
+            })
+        }).then(res => res.json()).then(data => {
+            console.log('Tracked VARK:', interactionType, data);
+        }).catch(err => console.error('Tracking error:', err));
+
+        // Track lesson progress for course completion percentage
+        if (currentLesson) {
+            // Map interaction types to progress actions
+            let progressAction = null;
+            if (interactionType === 'VIDEO_WATCH' || interactionType === 'VIDEO_COMPLETE') {
+                progressAction = 'VIDEO_WATCH';
+            } else if (interactionType === 'DOCUMENT_READ' || interactionType === 'DOCUMENT_OPEN' || interactionType === 'CODE_EXAMPLE_VIEW') {
+                progressAction = 'CONTENT_VIEW';
+            } else if (interactionType === 'QUIZ_ATTEMPT') {
+                progressAction = 'QUIZ_ATTEMPT';
+            } else if (interactionType === 'ASSIGNMENT_COMPLETE') {
+                progressAction = 'ASSIGNMENT_SUBMIT';
+            }
+
+            if (progressAction) {
+                trackLessonProgress(currentLesson.id, progressAction);
+            }
+        }
+    }
+
+    // Track lesson progress for course completion
+    function trackLessonProgress(lessonId, action) {
+        fetch('/api/progress/lesson', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lesson_id: lessonId,
+                action: action,
+                duration_seconds: 60
+            })
+        }).then(res => res.json()).then(data => {
+            console.log('Progress tracked:', data);
+            // Always update progress display after any tracking
+            updateProgressUI();
+
+            // Mark lesson as completed in the UI if 100%
+            if (data.completion_percentage >= 100) {
+                markLessonCompletedInUI(lessonId);
+            }
+        }).catch(err => console.error('Progress tracking error:', err));
+    }
+
+    // Mark a lesson as completed in the lesson list UI
+    function markLessonCompletedInUI(lessonId) {
+        const lessonItems = document.querySelectorAll('.module-lesson');
+        lessonItems.forEach(item => {
+            if (item.getAttribute('onclick')?.includes(`'${lessonId}'`) ||
+                item.getAttribute('onclick')?.includes(`${lessonId}`)) {
+                // Add completed styling
+                if (!item.querySelector('.lesson-completed-badge')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'lesson-completed-badge';
+                    badge.innerHTML = '✓';
+                    badge.style.cssText = 'color: var(--success); font-weight: bold; margin-left: 8px;';
+                    item.appendChild(badge);
+                }
+            }
+        });
+    }
+
+    // Mark current lesson as complete
+    async function markLessonComplete() {
+        if (!currentLesson) return;
+
+        try {
+            const response = await fetch('/api/progress/lesson', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    lesson_id: currentLesson.id,
+                    action: 'LESSON_COMPLETE',
+                    duration_seconds: 0
+                })
+            });
+
+            const data = await response.json();
+            console.log('Lesson marked complete:', data);
+
+            // Track for VARK as well
+            trackInteraction('LESSON_COMPLETE', 'LESSON', currentLesson.id, currentLesson.title);
+
+            // Show success message
+            showNotification('Lesson completed! Great job! 🎉', 'success');
+
+            // Update the progress UI
+            updateProgressUI();
+
+            // Close the modal
+            closeVideoModal();
+
+        } catch (error) {
+            console.error('Error marking lesson complete:', error);
+            showNotification('Failed to mark lesson complete', 'error');
+        }
+    }
+
+    // Update progress display
+    async function updateProgressUI() {
+        try {
+            // Get user ID if not set
+            if (!currentUserId) {
+                const userResponse = await fetch('/api/auth/me');
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    currentUserId = userData.id;
+                }
+            }
+
+            if (!currentUserId) return;
+
+            const response = await fetch(`/api/progress/course/${currentUserId}/${currentCourseId}`);
+            if (response.ok) {
+                const data = await response.json();
+                const progress = data.progress_percentage || 0;
+
+                // Update progress bar
+                const progressFill = document.querySelector('.progress-fill');
+                if (progressFill) {
+                    progressFill.style.width = progress + '%';
+                }
+
+                // Update progress text - find the one in the sidebar card
+                const progressTexts = document.querySelectorAll('.text-gray');
+                progressTexts.forEach(el => {
+                    if (el.textContent.includes('Complete')) {
+                        el.textContent = Math.round(progress) + '% Complete';
+                    }
+                });
+
+                // Update button text if progress > 0
+                if (progress > 0) {
+                    const startButtons = document.querySelectorAll('.btn.btn-primary');
+                    startButtons.forEach(btn => {
+                        if (btn.textContent.includes('Start Course') || btn.textContent.includes('Continue Course')) {
+                            btn.textContent = 'Continue Course';
+                        }
+                    });
+                }
+
+                console.log('Progress updated to:', progress + '%');
+            }
+        } catch (error) {
+            console.error('Error updating progress UI:', error);
+        }
+    }
+
+    // Show notification toast
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existing = document.querySelector('.notification-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = `notification-toast ${type}`;
+        toast.innerHTML = `
+            <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(toast);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function (event) {
+        const modal = document.getElementById('videoModal');
+        if (event.target == modal) {
+            closeVideoModal();
+        }
+    }
+
+    // ========== VIDEO QUIZ FUNCTIONS ==========
+
+    // Generate video quiz questions using AI
+    async function generateVideoQuiz(lessonTitle, lessonContent) {
+        try {
+            const response = await fetch('/api/video-quiz/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lesson_title: lessonTitle,
+                    lesson_content: lessonContent || lessonTitle,
+                    question_count: 3
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                videoQuizQuestions = data.questions || [];
+                return videoQuizQuestions;
+            }
+        } catch (error) {
+            console.error('Error generating video quiz:', error);
+        }
+
+        // Fallback: Generate basic questions if API fails
+        return generateFallbackQuestions(lessonTitle);
+    }
+
+    // Fallback questions if API fails
+    function generateFallbackQuestions(topic) {
+        return [
+            {
+                question: `What is the main concept covered in "${topic}"?`,
+                options: [
+                    "The fundamental principles and basics",
+                    "Advanced techniques only",
+                    "Historical background only",
+                    "None of the above"
+                ],
+                correct_answer: 0,
+                explanation: "This lesson covers the fundamental principles and basics of the topic."
+            },
+            {
+                question: `Why is understanding "${topic}" important?`,
+                options: [
+                    "It's not important",
+                    "It builds foundation for advanced topics",
+                    "Only for exams",
+                    "For entertainment only"
+                ],
+                correct_answer: 1,
+                explanation: "Understanding this topic builds a strong foundation for more advanced concepts."
+            },
+            {
+                question: `What should you do after learning "${topic}"?`,
+                options: [
+                    "Never practice",
+                    "Practice with examples and exercises",
+                    "Skip to unrelated topics",
+                    "Forget everything"
+                ],
+                correct_answer: 1,
+                explanation: "Practice with examples and exercises helps reinforce learning."
+            }
+        ];
+    }
+
+    // Show video quiz after video playback
+    async function showVideoQuiz() {
+        if (!currentLesson) return;
+
+        // Reset quiz state
+        videoQuizAnswers = {};
+        videoQuizTimeRemaining = VIDEO_QUIZ_TIME;
+
+        // Generate questions
+        videoQuizQuestions = await generateVideoQuiz(currentLesson.title, currentLesson.content);
+
+        if (videoQuizQuestions.length === 0) return;
+
+        // Display questions
+        displayVideoQuizQuestions();
+
+        // Show quiz section
+        document.getElementById('video-quiz-section').style.display = 'block';
+        document.getElementById('video-quiz-results').style.display = 'none';
+        document.getElementById('submit-video-quiz-btn').style.display = 'block';
+        document.getElementById('skip-video-quiz-btn').style.display = 'block';
+
+        // Start timer
+        startVideoQuizTimer();
+
+        // Scroll to quiz
+        document.getElementById('video-quiz-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Display video quiz questions
+    function displayVideoQuizQuestions() {
+        let html = '';
+        videoQuizQuestions.forEach((q, index) => {
+            html += `
+                <div class="video-quiz-question" style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border);">
+                    <h4 style="margin: 0 0 12px 0; color: var(--dark);">Question ${index + 1} of ${videoQuizQuestions.length}</h4>
+                    <p style="font-size: 16px; margin-bottom: 16px; line-height: 1.6;">${q.question}</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        ${q.options.map((opt, optIndex) => `
+                            <button class="video-quiz-option" data-question="${index}" data-option="${optIndex}"
+                                onclick="selectVideoQuizAnswer(${index}, ${optIndex})"
+                                style="padding: 14px 18px; border: 2px solid var(--border); border-radius: 10px; background: white;
+                                       text-align: left; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 12px;">
+                                <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--light);
+                                             display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">
+                                    ${String.fromCharCode(65 + optIndex)}
+                                </span>
+                                <span>${opt}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('video-quiz-questions').innerHTML = html;
+    }
+
+    // Select answer for video quiz
+    function selectVideoQuizAnswer(questionIndex, optionIndex) {
+        videoQuizAnswers[questionIndex] = optionIndex;
+
+        // Update visual state
+        const questionDiv = document.querySelectorAll('.video-quiz-question')[questionIndex];
+        questionDiv.querySelectorAll('.video-quiz-option').forEach((btn, idx) => {
+            if (idx === optionIndex) {
+                btn.style.borderColor = 'var(--primary)';
+                btn.style.background = 'rgba(99, 102, 241, 0.1)';
+                btn.querySelector('span:first-child').style.background = 'var(--primary)';
+                btn.querySelector('span:first-child').style.color = 'white';
+            } else {
+                btn.style.borderColor = 'var(--border)';
+                btn.style.background = 'white';
+                btn.querySelector('span:first-child').style.background = 'var(--light)';
+                btn.querySelector('span:first-child').style.color = 'var(--dark)';
+            }
+        });
+    }
+
+    // Start video quiz timer
+    function startVideoQuizTimer() {
+        updateVideoQuizTimerDisplay();
+
+        videoQuizTimer = setInterval(() => {
+            videoQuizTimeRemaining--;
+            updateVideoQuizTimerDisplay();
+
+            if (videoQuizTimeRemaining <= 0) {
+                clearInterval(videoQuizTimer);
+                submitVideoQuiz(true); // Auto-submit
+            }
+
+            // Warning at 30 seconds
+            if (videoQuizTimeRemaining === 30) {
+                showNotification('⚠️ 30 seconds remaining for quiz!', 'warning');
+                document.getElementById('video-quiz-timer').style.background = '#ef4444';
+            }
+        }, 1000);
+    }
+
+    // Update timer display
+    function updateVideoQuizTimerDisplay() {
+        const minutes = Math.floor(videoQuizTimeRemaining / 60);
+        const seconds = videoQuizTimeRemaining % 60;
+        const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        document.getElementById('video-quiz-timer').textContent = display;
+    }
+
+    // Stop video quiz timer
+    function stopVideoQuizTimer() {
+        if (videoQuizTimer) {
+            clearInterval(videoQuizTimer);
+            videoQuizTimer = null;
+        }
+    }
+
+    // Submit video quiz
+    function submitVideoQuiz(autoSubmit = false) {
+        stopVideoQuizTimer();
+
+        if (!autoSubmit && Object.keys(videoQuizAnswers).length < videoQuizQuestions.length) {
+            if (!confirm('You haven\'t answered all questions. Submit anyway?')) {
+                startVideoQuizTimer();
+                return;
+            }
+        }
+
+        // Calculate score
+        let correct = 0;
+        videoQuizQuestions.forEach((q, index) => {
+            if (videoQuizAnswers[index] === q.correct_answer) {
+                correct++;
+            }
+        });
+
+        const score = Math.round((correct / videoQuizQuestions.length) * 100);
+        const passed = score >= 70;
+
+        // Display results
+        displayVideoQuizResults(score, correct, passed);
+
+        // Track quiz completion
+        if (currentLesson) {
+            trackInteraction('QUIZ_COMPLETE', 'VIDEO_QUIZ', currentLesson.id, currentLesson.title);
+        }
+    }
+
+    // Display video quiz results
+    function displayVideoQuizResults(score, correct, passed) {
+        // Hide submit buttons
+        document.getElementById('submit-video-quiz-btn').style.display = 'none';
+        document.getElementById('skip-video-quiz-btn').style.display = 'none';
+
+        // Show results with correct/wrong answers
+        let resultsHtml = `
+            <div style="text-align: center; padding: 20px 0; margin-bottom: 24px;">
+                <div style="font-size: 48px; margin-bottom: 12px;">${passed ? '🎉' : '📚'}</div>
+                <h3 style="margin: 0; color: ${passed ? 'var(--success)' : 'var(--danger)'};">
+                    ${passed ? 'Great job!' : 'Keep practicing!'}
+                </h3>
+                <p style="margin: 8px 0 0; font-size: 24px; font-weight: bold; color: ${passed ? 'var(--success)' : 'var(--danger)'};">
+                    ${correct}/${videoQuizQuestions.length} correct (${score}%)
+                </p>
+            </div>
+        `;
+
+        // Show each question with feedback
+        videoQuizQuestions.forEach((q, index) => {
+            const userAnswer = videoQuizAnswers[index];
+            const isCorrect = userAnswer === q.correct_answer;
+            const wasAnswered = userAnswer !== undefined;
+
+            resultsHtml += `
+                <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px;
+                            border-left: 4px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong>Q${index + 1}: ${q.question}</strong>
+                        <span style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+                                     background: ${isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'};
+                                     color: ${isCorrect ? 'var(--success)' : 'var(--danger)'};">
+                            ${isCorrect ? '✓ Correct' : '✗ Wrong'}
+                        </span>
+                    </div>
+                    <div style="font-size: 14px; margin-bottom: 8px;">
+                        ${wasAnswered ? `<span style="color: ${isCorrect ? 'var(--success)' : 'var(--danger)'};">Your answer: ${String.fromCharCode(65 + userAnswer)}. ${q.options[userAnswer]}</span>` : '<span style="color: var(--gray);">Not answered</span>'}
+                    </div>
+                    ${!isCorrect ? `<div style="font-size: 14px; color: var(--success);">✓ Correct answer: ${String.fromCharCode(65 + q.correct_answer)}. ${q.options[q.correct_answer]}</div>` : ''}
+                    <div style="margin-top: 8px; padding: 8px 12px; background: rgba(99, 102, 241, 0.08); border-radius: 6px; font-size: 13px;">
+                        💡 ${q.explanation}
+                    </div>
+                </div>
+            `;
+        });
+
+        resultsHtml += `
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="hideVideoQuiz()" class="btn btn-primary">Continue Learning</button>
+            </div>
+        `;
+
+        document.getElementById('video-quiz-questions').style.display = 'none';
+        document.getElementById('video-quiz-results').innerHTML = resultsHtml;
+        document.getElementById('video-quiz-results').style.display = 'block';
+    }
+
+    // Skip video quiz
+    function skipVideoQuiz() {
+        stopVideoQuizTimer();
+        hideVideoQuiz();
+        showNotification('Quiz skipped. You can always review later!', 'info');
+    }
+
+    // Hide video quiz section
+    function hideVideoQuiz() {
+        document.getElementById('video-quiz-section').style.display = 'none';
+        stopVideoQuizTimer();
+        videoQuizQuestions = [];
+        videoQuizAnswers = {};
+    }
+
+    // Trigger quiz after video loads (simulate watching)
+    // In a real implementation, you'd use YouTube API to detect video end
+    function setupVideoQuizTrigger() {
+        // Show quiz button after 30 seconds of video playing
+        setTimeout(() => {
+            if (currentLesson && document.getElementById('videoModal').style.display === 'flex') {
+                // Add a "Take Quiz" button that appears after video
+                const videoContainer = document.querySelector('.video-container');
+                if (videoContainer && !document.getElementById('take-quiz-prompt')) {
+                    const prompt = document.createElement('div');
+                    prompt.id = 'take-quiz-prompt';
+                    prompt.style.cssText = 'margin-top: 16px; padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(56, 249, 215, 0.1)); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(16, 185, 129, 0.3);';
+                    prompt.innerHTML = `
+                        <div>
+                            <p style="margin: 0; font-weight: 600; color: var(--success);">📝 Ready to test your knowledge?</p>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: var(--gray);">Take a quick 3-question quiz to reinforce what you learned</p>
+                        </div>
+                        <button onclick="showVideoQuiz()" class="btn btn-success" style="white-space: nowrap;">
+                            Take Quiz →
+                        </button>
+                    `;
+                    videoContainer.parentNode.appendChild(prompt);
+                }
+            }
+        }, 30000); // 30 seconds delay
+    }
+</script>
+{% endblock %}

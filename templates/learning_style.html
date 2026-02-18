@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}Your Learning Style - Adaptive Learning{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card mb-3">
+        <h1 class="card-title">Your Learning Style Analysis</h1>
+        <p class="card-subtitle">Based on your learning behavior and interactions</p>
+    </div>
+
+    <!-- Learning Style Overview -->
+    <div class="grid grid-2 mb-3">
+        <div class="card">
+            <h2 class="card-title">Dominant Style</h2>
+            <div id="dominant-style-container" style="text-align: center; padding: 40px;">
+                <div class="pulse">Loading...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Confidence Level</h2>
+            <div id="confidence-container" style="text-align: center; padding: 40px;">
+                <div class="pulse">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VARK Scores Chart -->
+    <div class="card mb-3">
+        <h2 class="card-title">VARK Learning Style Breakdown</h2>
+        <canvas id="vark-chart" style="max-height: 400px;"></canvas>
+    </div>
+
+    <!-- NEW: Dynamic VARK Weights Section -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Dynamic VARK Weights</h2>
+            <p class="card-subtitle">Confidence-based adaptive weighting</p>
+        </div>
+        <div id="dynamic-weights-container">
+            <div class="pulse text-center" style="padding: 40px;">Loading dynamic weights...</div>
+        </div>
+    </div>
+
+    <!-- NEW: VARK Drift Detection -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Learning Style Evolution</h2>
+            <p class="card-subtitle">VARK drift detection and adaptation</p>
+        </div>
+        <div id="drift-container">
+            <div class="pulse text-center" style="padding: 40px;">Analyzing learning style shifts...</div>
+        </div>
+    </div>
+
+    <!-- NEW: Confidence-Aware Difficulty -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Recommended Difficulty Level</h2>
+            <p class="card-subtitle">Based on performance and confidence analysis</p>
+        </div>
+        <div id="difficulty-container">
+            <div class="pulse text-center" style="padding: 40px;">Analyzing difficulty...</div>
+        </div>
+    </div>
+
+    <!-- Style Descriptions -->
+    <div class="grid grid-2 mb-3">
+        <div class="card">
+            <h3 class="card-title">What This Means</h3>
+            <p id="style-description" class="text-gray">Loading your personalized analysis...</p>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Recommended Learning Methods</h3>
+            <p id="style-recommendations" class="text-gray">Loading recommendations...</p>
+        </div>
+    </div>
+
+    <!-- Learning Pattern Analysis -->
+    <div class="card">
+        <h2 class="card-title">Your Learning Patterns</h2>
+        <div id="patterns-container">
+            <div class="pulse text-center" style="padding: 40px;">Analyzing your patterns...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .weight-bar {
+        height: 24px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .weight-fill {
+        height: 100%;
+        border-radius: 12px;
+        transition: width 0.5s ease;
+    }
+    .weight-visual { background: linear-gradient(90deg, #667eea, #764ba2); }
+    .weight-auditory { background: linear-gradient(90deg, #f093fb, #f5576c); }
+    .weight-reading_writing { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+    .weight-kinesthetic { background: linear-gradient(90deg, #43e97b, #38f9d7); }
+
+    .drift-alert {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        color: #8b4513;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+    }
+    .drift-stable {
+        background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+        color: #2d5016;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+    }
+
+    .difficulty-badge {
+        display: inline-block;
+        padding: 12px 24px;
+        border-radius: 24px;
+        font-size: 18px;
+        font-weight: 700;
+        margin: 16px 0;
+    }
+    .difficulty-BEGINNER { background: #d4edda; color: #155724; }
+    .difficulty-INTERMEDIATE { background: #fff3cd; color: #856404; }
+    .difficulty-ADVANCED { background: #f8d7da; color: #721c24; }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+    }
+    .stat-item {
+        background: rgba(99, 102, 241, 0.1);
+        padding: 16px;
+        border-radius: 12px;
+        text-align: center;
+    }
+    .stat-value-lg {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    .stat-label-sm {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .trend-positive { color: #28a745; }
+    .trend-negative { color: #dc3545; }
+    .trend-stable { color: #6c757d; }
+
+    .insight-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        border-left: 4px solid var(--primary);
+    }
+</style>
+
+<script>
+    let currentUserId = 1;
+
+    async function loadLearningStyle() {
+        try {
+            const userResponse = await fetch('/api/auth/me');
+            const userData = await userResponse.json();
+            currentUserId = userData.id;
+
+            // Get learning style
+            const styleResponse = await fetch(`/api/analytics/learning-style/${currentUserId}`);
+            const style = await styleResponse.json();
+
+            // Display dominant style
+            document.getElementById('dominant-style-container').innerHTML = `
+                <div style="font-size: 72px; margin-bottom: 16px;">
+                    ${getStyleIcon(style.dominant_style)}
+                </div>
+                <span class="learning-style-badge ${style.dominant_style}" style="font-size: 20px;">
+                    ${style.dominant_style.replace('_', ' ')}
+                </span>
+            `;
+
+            // Display confidence
+            const confidencePercent = style.confidence || 0;
+            document.getElementById('confidence-container').innerHTML = `
+                <div style="font-size: 48px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
+                    ${Math.round(confidencePercent)}%
+                </div>
+                <p class="text-gray">Based on ${style.data_points || 0} interactions</p>
+                <div class="progress-bar" style="margin-top: 16px;">
+                    <div class="progress-fill" style="width: ${confidencePercent}%;"></div>
+                </div>
+            `;
+
+            // Create VARK chart
+            createVARKChart(style);
+
+            // Display descriptions
+            document.getElementById('style-description').textContent = style.description || 'Keep learning to discover your style!';
+            document.getElementById('style-recommendations').textContent = style.recommendations || 'Try different types of content.';
+
+            // Load new features
+            loadDynamicWeights();
+            loadDriftDetection();
+            loadDifficultyRecommendation();
+            loadLearningPatterns(currentUserId);
+
+        } catch (error) {
+            console.error('Error loading learning style:', error);
+        }
+    }
+
+    // NEW: Load Dynamic VARK Weights
+    async function loadDynamicWeights() {
+        try {
+            const response = await fetch(`/api/vark/dynamic-weights/${currentUserId}`);
+            const data = await response.json();
+
+            let html = `
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${Math.round(data.confidence || 0)}%</div>
+                        <div class="stat-label-sm">Overall Confidence</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${data.data_points || 0}</div>
+                        <div class="stat-label-sm">Data Points</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${Math.round((data.stability_factor || 0) * 100)}%</div>
+                        <div class="stat-label-sm">Stability</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${data.dominant_style || 'N/A'}</div>
+                        <div class="stat-label-sm">Dominant Style</div>
+                    </div>
+                </div>
+                <div style="margin-top: 24px;">
+                    <h4 style="margin-bottom: 16px;">Weighted Distribution</h4>
+            `;
+
+            if (data.weights) {
+                const styleLabels = {
+                    visual: 'Visual',
+                    auditory: 'Auditory',
+                    reading_writing: 'Reading/Writing',
+                    kinesthetic: 'Kinesthetic'
+                };
+
+                for (const [style, weight] of Object.entries(data.weights)) {
+                    const percentage = Math.round(weight * 100);
+                    html += `
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>${getStyleIcon(style.toUpperCase())} ${styleLabels[style] || style}</span>
+                                <span style="font-weight: 600;">${percentage}%</span>
+                            </div>
+                            <div class="weight-bar">
+                                <div class="weight-fill weight-${style}" style="width: ${percentage}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            html += '</div>';
+            document.getElementById('dynamic-weights-container').innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading dynamic weights:', error);
+            document.getElementById('dynamic-weights-container').innerHTML = '<p class="text-gray">Unable to load dynamic weights.</p>';
+        }
+    }
+
+    // NEW: Load VARK Drift Detection
+    async function loadDriftDetection() {
+        try {
+            const response = await fetch(`/api/vark/adaptive-content/${currentUserId}`);
+            const data = await response.json();
+
+            let html = '';
+
+            if (data.shift_detected) {
+                html += `
+                    <div class="drift-alert">
+                        <strong>Learning Style Shift Detected!</strong>
+                        <p style="margin-top: 8px;">Your learning preferences are evolving. We're adapting your content recommendations.</p>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="drift-stable">
+                        <strong>Stable Learning Style</strong>
+                        <p style="margin-top: 8px;">Your learning preferences are consistent. Current style: <strong>${data.current_style || 'Unknown'}</strong></p>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="stat-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${data.current_style || 'N/A'}</div>
+                        <div class="stat-label-sm">Current Style</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${data.adapt_content ? 'Yes' : 'No'}</div>
+                        <div class="stat-label-sm">Content Adaptation Active</div>
+                    </div>
+                </div>
+            `;
+
+            if (data.content_adjustments && data.content_adjustments.length > 0) {
+                html += '<div style="margin-top: 24px;"><h4>Recommended Adjustments</h4>';
+                data.content_adjustments.forEach(adjustment => {
+                    html += `<div class="insight-card">${adjustment}</div>`;
+                });
+                html += '</div>';
+            }
+
+            if (data.emerging_preferences && data.emerging_preferences.length > 0) {
+                html += '<div style="margin-top: 16px;"><h4>Emerging Preferences</h4><ul>';
+                data.emerging_preferences.forEach(pref => {
+                    html += `<li>${pref}</li>`;
+                });
+                html += '</ul></div>';
+            }
+
+            document.getElementById('drift-container').innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading drift detection:', error);
+            document.getElementById('drift-container').innerHTML = '<p class="text-gray">Unable to load drift detection.</p>';
+        }
+    }
+
+    // NEW: Load Confidence-Aware Difficulty
+    async function loadDifficultyRecommendation() {
+        try {
+            const response = await fetch(`/api/difficulty/confidence-aware/${currentUserId}`);
+            const data = await response.json();
+
+            const trendIcon = data.analysis?.performance_trend === 'improving' ? '&#8599;' :
+                             data.analysis?.performance_trend === 'declining' ? '&#8600;' : '&#8594;';
+            const trendClass = data.analysis?.performance_trend === 'improving' ? 'trend-positive' :
+                              data.analysis?.performance_trend === 'declining' ? 'trend-negative' : 'trend-stable';
+
+            let html = `
+                <div style="text-align: center;">
+                    <div class="difficulty-badge difficulty-${data.recommended_difficulty || 'INTERMEDIATE'}">
+                        ${data.recommended_difficulty || 'INTERMEDIATE'}
+                    </div>
+                    <p class="text-gray">Recommended based on your performance</p>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${Math.round(data.overall_confidence || 0)}%</div>
+                        <div class="stat-label-sm">Confidence</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${Math.round(data.analysis?.recent_avg_score || 0)}%</div>
+                        <div class="stat-label-sm">Recent Avg Score</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value-lg ${trendClass}">${trendIcon} ${data.analysis?.performance_trend || 'stable'}</div>
+                        <div class="stat-label-sm">Trend</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value-lg">${Math.round(data.analysis?.consistency_score || 0)}%</div>
+                        <div class="stat-label-sm">Consistency</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; gap: 16px;">
+                    <div style="flex: 1; padding: 16px; border-radius: 12px; background: ${data.can_increase ? '#d4edda' : '#f8f9fa'}; text-align: center;">
+                        <span style="font-size: 24px;">${data.can_increase ? '&#9650;' : '&#128274;'}</span>
+                        <p style="margin-top: 8px; font-size: 14px;">${data.can_increase ? 'Ready to level up!' : 'Not ready to level up'}</p>
+                    </div>
+                    <div style="flex: 1; padding: 16px; border-radius: 12px; background: ${data.can_decrease ? '#fff3cd' : '#d4edda'}; text-align: center;">
+                        <span style="font-size: 24px;">${data.can_decrease ? '&#9660;' : '&#10004;'}</span>
+                        <p style="margin-top: 8px; font-size: 14px;">${data.can_decrease ? 'May need easier content' : 'Level appropriate'}</p>
+                    </div>
+                </div>
+            `;
+
+            if (data.recommendations && data.recommendations.length > 0) {
+                html += '<div style="margin-top: 24px;"><h4>Insights</h4>';
+                data.recommendations.forEach(rec => {
+                    const icon = rec.type === 'POSITIVE' ? '&#10004;' : rec.type === 'WARNING' ? '&#9888;' : '&#128161;';
+                    html += `
+                        <div class="insight-card">
+                            <span style="margin-right: 8px;">${icon}</span>
+                            <strong>${rec.message}</strong>
+                            ${rec.action ? `<p style="margin-top: 4px; font-size: 14px; color: var(--text-secondary);">${rec.action}</p>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            document.getElementById('difficulty-container').innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading difficulty recommendation:', error);
+            document.getElementById('difficulty-container').innerHTML = '<p class="text-gray">Unable to load difficulty recommendation.</p>';
+        }
+    }
+
+    function getStyleIcon(style) {
+        const icons = {
+            'VISUAL': '&#128065;',
+            'AUDITORY': '&#128066;',
+            'KINESTHETIC': '&#129336;',
+            'READING_WRITING': '&#128214;',
+            'MULTIMODAL': '&#127752;'
+        };
+        return icons[style] || '&#129504;';
+    }
+
+    function createVARKChart(style) {
+        const ctx = document.getElementById('vark-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Visual', 'Auditory', 'Kinesthetic', 'Reading/Writing'],
+                datasets: [{
+                    label: 'Your Scores',
+                    data: [
+                        style.visual_score || 50,
+                        style.auditory_score || 50,
+                        style.kinesthetic_score || 50,
+                        style.reading_writing_score || 50
+                    ],
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(240, 147, 251, 0.8)',
+                        'rgba(79, 172, 254, 0.8)',
+                        'rgba(67, 233, 123, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(102, 126, 234, 1)',
+                        'rgba(240, 147, 251, 1)',
+                        'rgba(79, 172, 254, 1)',
+                        'rgba(67, 233, 123, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
+    async function loadLearningPatterns(userId) {
+        try {
+            const response = await fetch(`/api/analytics/pattern/${userId}?days=30`);
+            const patterns = await response.json();
+
+            let html = '<div class="grid grid-3">';
+
+            if (patterns.insights && patterns.insights.length > 0) {
+                patterns.insights.forEach(insight => {
+                    html += `
+                        <div class="card">
+                            <p style="font-size: 32px; margin-bottom: 8px;">&#128161;</p>
+                            <p>${insight}</p>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<p class="text-gray">Keep learning to see your patterns!</p>';
+            }
+
+            html += '</div>';
+            document.getElementById('patterns-container').innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading patterns:', error);
+        }
+    }
+
+    loadLearningStyle();
+</script>
+{% endblock %}

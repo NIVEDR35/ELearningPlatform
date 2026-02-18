@@ -1,0 +1,506 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Courses - Adaptive Learning{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Topic Selection Banner -->
+    <div class="card mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div style="padding: 40px; text-align: center;">
+            <h1 style="color: white; margin-bottom: 16px;">🎯 What do you want to learn today?</h1>
+            <p style="font-size: 18px; opacity: 0.9;">Select your interests and we'll personalize your learning journey
+            </p>
+
+            <div style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                <button class="topic-btn" data-topic="programming">💻 Programming</button>
+                <button class="topic-btn" data-topic="data-science">📊 Data Science</button>
+                <button class="topic-btn" data-topic="web-dev">🌐 Web Development</button>
+                <button class="topic-btn" data-topic="ai-ml">🤖 AI & Machine Learning</button>
+                <button class="topic-btn" data-topic="design">🎨 Design</button>
+                <button class="topic-btn" data-topic="business">💼 Business</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+            <div>
+                <label style="font-weight: 600; margin-right: 8px;">Difficulty:</label>
+                <select id="difficulty-filter" class="filter-select">
+                    <option value="">All Levels</option>
+                    <option value="BEGINNER">Beginner</option>
+                    <option value="INTERMEDIATE">Intermediate</option>
+                    <option value="ADVANCED">Advanced</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-weight: 600; margin-right: 8px;">Sort by:</label>
+                <select id="sort-filter" class="filter-select">
+                    <option value="recommended">Recommended</option>
+                    <option value="popular">Most Popular</option>
+                    <option value="newest">Newest</option>
+                    <option value="duration">Duration</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <input type="text" id="search-input" placeholder="🔍 Search courses..."
+                    style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px;">
+            </div>
+            <button onclick="generateAICourse()" class="btn btn-primary">
+                ✨ Generate AI Course
+            </button>
+        </div>
+    </div>
+
+    <!-- Courses Grid -->
+    <div id="courses-container" class="grid grid-3">
+        <div class="text-center pulse" style="grid-column: 1 / -1; padding: 60px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📚</div>
+            <p style="color: var(--gray);">Loading amazing courses for you...</p>
+        </div>
+    </div>
+
+    <!-- AI Course Generation Modal -->
+    <div id="ai-course-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>✨ Generate AI-Powered Course</h2>
+
+            <div style="padding: 28px 32px;">
+                <div class="form-group">
+                    <label class="form-label">What topic do you want to learn?</label>
+                    <input type="text" id="ai-topic" class="form-input" placeholder="e.g., Python for Data Science">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Your current level</label>
+                    <select id="ai-level" class="form-input">
+                        <option value="beginner">Beginner - I'm just starting</option>
+                        <option value="intermediate">Intermediate - I have some experience</option>
+                        <option value="advanced">Advanced - I want to master it</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Time commitment (weeks)</label>
+                    <input type="number" id="ai-weeks" class="form-input" value="8" min="1" max="52">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Learning goal</label>
+                    <textarea id="ai-goal" class="form-input" rows="3"
+                        placeholder="What do you want to achieve? (e.g., Build a portfolio project, Get job-ready, Learn for fun)"></textarea>
+                </div>
+
+                <button onclick="createAICourse()" class="btn btn-primary btn-lg" style="width: 100%;">
+                    🚀 Generate Course
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .topic-btn {
+        padding: 14px 28px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 2px solid rgba(255, 255, 255, 0.25);
+        border-radius: 30px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+        font-size: 15px;
+    }
+
+    .topic-btn:hover,
+    .topic-btn.active {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .filter-select {
+        padding: 10px 18px;
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        font-size: 14px;
+        cursor: pointer;
+        background: white;
+        transition: all 0.3s;
+    }
+
+    .filter-select:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .course-card-enhanced {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s;
+        cursor: pointer;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .course-card-enhanced:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    .course-thumbnail {
+        width: 100%;
+        height: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .course-thumbnail::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
+    }
+
+    .course-content {
+        padding: 22px;
+    }
+
+    .course-title {
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--dark);
+        line-height: 1.4;
+    }
+
+    .course-description {
+        font-size: 14px;
+        color: var(--gray);
+        line-height: 1.5;
+    }
+
+    .course-stats {
+        display: flex;
+        gap: 16px;
+        margin-top: 14px;
+        font-size: 13px;
+        color: var(--gray);
+    }
+
+    .difficulty-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .difficulty-badge.BEGINNER {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.1));
+        color: var(--success);
+    }
+
+    .difficulty-badge.INTERMEDIATE {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.1));
+        color: #d97706;
+    }
+
+    .difficulty-badge.ADVANCED {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.1));
+        color: var(--danger);
+    }
+
+    .course-tag {
+        display: inline-block;
+        padding: 4px 10px;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(118, 75, 162, 0.1));
+        border-radius: 8px;
+        font-size: 11px;
+        color: var(--primary);
+        margin: 3px;
+        font-weight: 600;
+    }
+
+    /* AI Course Generation Modal */
+    .modal {
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background-color: white;
+        padding: 0;
+        border-radius: 24px;
+        max-width: 520px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-content > h2 {
+        margin: 0;
+        padding: 28px 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 24px 24px 0 0;
+        font-size: 22px;
+    }
+
+    .modal-body {
+        padding: 28px 32px;
+    }
+
+    .close {
+        position: absolute;
+        right: 20px;
+        top: 24px;
+        font-size: 28px;
+        font-weight: bold;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        transition: all 0.3s;
+        z-index: 1;
+    }
+
+    .close:hover {
+        color: white;
+    }
+
+    .form-group {
+        margin-bottom: 22px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: var(--dark);
+        font-size: 14px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        font-size: 15px;
+        transition: all 0.3s;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+</style>
+
+<script>
+    let selectedTopics = [];
+    let allCourses = [];
+
+    // Load courses on page load
+    async function loadCourses() {
+        try {
+            const response = await fetch('/api/courses');
+            const data = await response.json();
+            allCourses = data.courses || [];
+            displayCourses(allCourses);
+        } catch (error) {
+            console.error('Error loading courses:', error);
+            document.getElementById('courses-container').innerHTML = `
+            <div class="text-center" style="grid-column: 1 / -1; padding: 60px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">😔</div>
+                <p style="color: var(--gray);">Failed to load courses. Please try again.</p>
+            </div>
+        `;
+        }
+    }
+
+    function displayCourses(courses) {
+        const container = document.getElementById('courses-container');
+
+        if (!courses || courses.length === 0) {
+            container.innerHTML = `
+            <div class="text-center" style="grid-column: 1 / -1; padding: 60px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">📚</div>
+                <p style="color: var(--gray); margin-bottom: 16px;">No courses found. Create one with AI!</p>
+                <button onclick="generateAICourse()" class="btn btn-primary">✨ Generate AI Course</button>
+            </div>
+        `;
+            return;
+        }
+
+        container.innerHTML = courses.map(course => `
+        <div class="course-card-enhanced" onclick="viewCourse(${course.id})">
+            <div class="course-thumbnail" style="background: linear-gradient(135deg, ${getRandomGradient()});">
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 64px;">
+                    ${getCourseIcon(course.title)}
+                </div>
+            </div>
+            <div class="course-content">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                    <span class="difficulty-badge ${course.difficulty}">${course.difficulty}</span>
+                    <span style="font-size: 12px; color: var(--gray);">${course.duration_hours}h</span>
+                </div>
+                <h3 class="course-title">${course.title}</h3>
+                <p class="course-description">${course.description.substring(0, 100)}...</p>
+                <div class="course-stats">
+                    <span>⭐ 4.8</span>
+                    <span>👥 ${Math.floor(Math.random() * 1000) + 100} students</span>
+                </div>
+                ${course.tags && course.tags.length > 0 ? `
+                    <div style="margin-top: 12px;">
+                        ${course.tags.slice(0, 3).map(tag =>
+            `<span class="course-tag">${tag.trim()}</span>`
+        ).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+    }
+
+    function getRandomGradient() {
+        const gradients = [
+            '#667eea 0%, #764ba2 100%',
+            '#f093fb 0%, #f5576c 100%',
+            '#4facfe 0%, #00f2fe 100%',
+            '#43e97b 0%, #38f9d7 100%',
+            '#fa709a 0%, #fee140 100%'
+        ];
+        return gradients[Math.floor(Math.random() * gradients.length)];
+    }
+
+    function getCourseIcon(title) {
+        if (title.toLowerCase().includes('python')) return '🐍';
+        if (title.toLowerCase().includes('web')) return '🌐';
+        if (title.toLowerCase().includes('data')) return '📊';
+        if (title.toLowerCase().includes('machine learning') || title.toLowerCase().includes('ml')) return '🤖';
+        if (title.toLowerCase().includes('database')) return '🗄️';
+        return '📚';
+    }
+
+    function viewCourse(courseId) {
+        window.location.href = `/course/${courseId}`;
+    }
+
+    // Topic selection
+    document.querySelectorAll('.topic-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const topic = this.dataset.topic;
+            this.classList.toggle('active');
+
+            if (selectedTopics.includes(topic)) {
+                selectedTopics = selectedTopics.filter(t => t !== topic);
+            } else {
+                selectedTopics.push(topic);
+            }
+
+            filterCourses();
+        });
+    });
+
+    // Filters
+    document.getElementById('difficulty-filter').addEventListener('change', filterCourses);
+    document.getElementById('sort-filter').addEventListener('change', filterCourses);
+    document.getElementById('search-input').addEventListener('input', filterCourses);
+
+    function filterCourses() {
+        const difficulty = document.getElementById('difficulty-filter').value;
+        const search = document.getElementById('search-input').value.toLowerCase();
+
+        let filtered = allCourses.filter(course => {
+            const matchesDifficulty = !difficulty || course.difficulty === difficulty;
+            const matchesSearch = !search ||
+                course.title.toLowerCase().includes(search) ||
+                course.description.toLowerCase().includes(search);
+
+            return matchesDifficulty && matchesSearch;
+        });
+
+        displayCourses(filtered);
+    }
+
+    // AI Course Generation
+    function generateAICourse() {
+        document.getElementById('ai-course-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('ai-course-modal').style.display = 'none';
+    }
+
+    async function createAICourse() {
+        const topic = document.getElementById('ai-topic').value;
+        const level = document.getElementById('ai-level').value;
+        const weeks = document.getElementById('ai-weeks').value;
+        const goal = document.getElementById('ai-goal').value;
+
+        if (!topic) {
+            alert('Please enter a topic!');
+            return;
+        }
+
+        try {
+            showNotification('Generating your personalized course with AI...', 'info');
+
+            const response = await fetch('/api/courses/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    topic: topic,
+                    level: level,
+                    weeks: parseInt(weeks),
+                    goal: goal
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                showNotification('Course created successfully!', 'success');
+                closeModal();
+                loadCourses();
+
+                // Redirect to the new course
+                setTimeout(() => {
+                    window.location.href = `/course/${data.course.id}`;
+                }, 1500);
+            } else {
+                showNotification('Failed to generate course. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('An error occurred. Please try again.', 'error');
+        }
+    }
+
+    // Load courses on page load
+    loadCourses();
+</script>
+{% endblock %}

@@ -1,0 +1,1260 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Adaptive Learning{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="fade-in">
+        <!-- Enhanced Welcome Hero Section -->
+        <div class="welcome-hero mb-3">
+            <div class="welcome-hero-content">
+                <div class="welcome-text">
+                    <p class="welcome-greeting">Good <span id="time-greeting">morning</span>,</p>
+                    <h1 class="welcome-name"><span id="username">Learner</span>! 👋</h1>
+                    <p class="welcome-subtitle">Your personalized learning journey continues...</p>
+                </div>
+                <div class="welcome-actions">
+                    <div class="streak-widget">
+                        <div class="streak-flame">🔥</div>
+                        <div class="streak-info">
+                            <span class="streak-count" id="streak-count">0</span>
+                            <span class="streak-label">Day Streak</span>
+                        </div>
+                    </div>
+                    <button id="end-session-btn" onclick="endSession()" class="btn btn-outline-light" style="display: none;">
+                        📊 End Session
+                    </button>
+                </div>
+            </div>
+            <div class="welcome-decoration">
+                <div class="decoration-circle circle-1"></div>
+                <div class="decoration-circle circle-2"></div>
+                <div class="decoration-circle circle-3"></div>
+            </div>
+        </div>
+
+        <!-- Continue Learning Section -->
+        <div id="continue-learning-section" class="continue-learning-card mb-3" style="display: none;">
+            <div class="continue-learning-content">
+                <div class="continue-icon">▶️</div>
+                <div class="continue-info">
+                    <p class="continue-label">Continue where you left off</p>
+                    <h3 id="last-course-title" class="continue-title">Loading...</h3>
+                    <div class="continue-progress-bar">
+                        <div id="last-course-progress" class="continue-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <span id="last-course-progress-text" class="continue-progress-text">0% Complete</span>
+                </div>
+                <a id="continue-course-link" href="#" class="btn btn-primary continue-btn">Continue Learning →</a>
+            </div>
+        </div>
+
+        <!-- Enhanced Stats Grid -->
+        <div class="grid grid-4 mb-3">
+            <div class="stat-card enhanced-stat">
+                <div class="stat-icon-wrapper stat-icon-time">
+                    <span class="stat-icon">⏱️</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="total-time">0h</div>
+                    <div class="stat-label">Learning Time</div>
+                </div>
+                <div class="stat-trend positive">
+                    <span>↑</span> +12%
+                </div>
+            </div>
+
+            <div class="stat-card enhanced-stat">
+                <div class="stat-icon-wrapper stat-icon-engagement">
+                    <span class="stat-icon">🎯</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="engagement-score">0%</div>
+                    <div class="stat-label">Engagement</div>
+                </div>
+                <div class="stat-trend positive">
+                    <span>↑</span> +8%
+                </div>
+            </div>
+
+            <div class="stat-card enhanced-stat">
+                <div class="stat-icon-wrapper stat-icon-progress">
+                    <span class="stat-icon">📚</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="courses-progress">0</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-trend neutral">
+                    <span>→</span> Active
+                </div>
+            </div>
+
+            <div class="stat-card enhanced-stat">
+                <div class="stat-icon-wrapper stat-icon-complete">
+                    <span class="stat-icon">🏆</span>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="courses-completed">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-trend positive">
+                    <span>★</span> Great!
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Style & Analytics -->
+        <div class="grid grid-2 mb-3">
+            <!-- Learning Style Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">Your Learning Style</h2>
+                        <p class="card-subtitle">Based on <span id="data-points">0</span> interactions</p>
+                    </div>
+                    <div id="learning-style-badge"></div>
+                </div>
+                <canvas id="learning-style-chart"></canvas>
+                <div class="mt-2">
+                    <p id="style-description" class="text-gray"></p>
+                </div>
+                <a href="{{ url_for('learning_style_page') }}" class="btn btn-primary mt-2" style="width: 100%;">
+                    View Detailed Analysis
+                </a>
+            </div>
+
+            <!-- Activity Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Learning Activity</h2>
+                    <p class="card-subtitle">Last 7 days</p>
+                </div>
+                <canvas id="activity-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- NEW: Quick Access to New Features -->
+        <div class="grid grid-3 mb-3">
+            <div class="card quick-access-card" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));">
+                <div style="text-align: center; padding: 24px;">
+                    <span class="quick-access-icon">📊</span>
+                    <h3 class="card-title">Concept Mastery</h3>
+                    <p class="text-gray" style="font-size: 14px; margin-bottom: 16px;">Track your understanding of individual concepts</p>
+                    <a href="{{ url_for('concept_mastery_page') }}" class="btn btn-primary">View Mastery</a>
+                </div>
+            </div>
+            <div class="card quick-access-card" style="background: linear-gradient(135deg, rgba(240, 147, 251, 0.08), rgba(245, 87, 108, 0.08));">
+                <div style="text-align: center; padding: 24px;">
+                    <span class="quick-access-icon">🎯</span>
+                    <h3 class="card-title">Smart Recommendations</h3>
+                    <p class="text-gray" style="font-size: 14px; margin-bottom: 16px;">Bias-aware course suggestions for balanced learning</p>
+                    <a href="{{ url_for('recommendations_page') }}" class="btn btn-primary">View Recommendations</a>
+                </div>
+            </div>
+            <div class="card quick-access-card" style="background: linear-gradient(135deg, rgba(67, 233, 123, 0.08), rgba(56, 249, 215, 0.08));">
+                <div style="text-align: center; padding: 24px;">
+                    <span class="quick-access-icon">🧠</span>
+                    <h3 class="card-title">Learning Style</h3>
+                    <p class="text-gray" style="font-size: 14px; margin-bottom: 16px;">Dynamic VARK analysis with drift detection</p>
+                    <a href="{{ url_for('learning_style_page') }}" class="btn btn-primary">View Analysis</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h2 class="card-title">Recommended for You</h2>
+                <p class="card-subtitle">Personalized based on your learning style and progress</p>
+            </div>
+            <div id="recommendations-container" class="grid grid-3">
+                <!-- Recommendations will be loaded here -->
+                <div class="text-center pulse" style="grid-column: 1 / -1; padding: 40px;">
+                    Loading recommendations...
+                </div>
+            </div>
+            <a href="{{ url_for('recommendations_page') }}" class="btn btn-outline mt-2" style="width: 100%;">
+                View All Recommendations
+            </a>
+        </div>
+
+        <!-- Recent Activity with Timeline -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Recent Activity</h2>
+                <p class="card-subtitle">Your learning journey</p>
+            </div>
+            <div id="recent-activity" class="activity-timeline">
+                <!-- Activity will be loaded here -->
+                <div class="activity-item">
+                    <div class="activity-dot"></div>
+                    <div class="activity-content">
+                        <p class="activity-text">Start learning to see your activity here!</p>
+                        <span class="activity-time">Just now</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Goals Section -->
+        <div class="card mb-3" style="margin-top: 24px;">
+            <div class="card-header">
+                <h2 class="card-title">🎯 Today's Learning Goals</h2>
+                <p class="card-subtitle">Small steps lead to big achievements</p>
+            </div>
+            <div class="goals-container">
+                <div class="goal-item" id="goal-lesson">
+                    <div class="goal-checkbox">
+                        <span class="goal-icon">📖</span>
+                    </div>
+                    <div class="goal-info">
+                        <p class="goal-title">Complete 1 lesson</p>
+                        <div class="goal-progress-bar">
+                            <div class="goal-progress-fill" id="goal-lesson-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <span class="goal-status" id="goal-lesson-status">0/1</span>
+                </div>
+                <div class="goal-item" id="goal-quiz">
+                    <div class="goal-checkbox">
+                        <span class="goal-icon">❓</span>
+                    </div>
+                    <div class="goal-info">
+                        <p class="goal-title">Take a quiz</p>
+                        <div class="goal-progress-bar">
+                            <div class="goal-progress-fill" id="goal-quiz-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <span class="goal-status" id="goal-quiz-status">0/1</span>
+                </div>
+                <div class="goal-item" id="goal-time">
+                    <div class="goal-checkbox">
+                        <span class="goal-icon">⏰</span>
+                    </div>
+                    <div class="goal-info">
+                        <p class="goal-title">Study for 30 minutes</p>
+                        <div class="goal-progress-bar">
+                            <div class="goal-progress-fill" id="goal-time-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <span class="goal-status" id="goal-time-status">0/30 min</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Summary Modal -->
+<div id="session-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Session Summary</h2>
+            <button onclick="closeSessionModal()" class="modal-close">&times;</button>
+        </div>
+        <div id="session-summary-content">
+            <div class="pulse text-center" style="padding: 40px;">Loading summary...</div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeSessionModal()" class="btn btn-primary">Continue Learning</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Welcome Hero Section */
+    .welcome-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        border-radius: 24px;
+        padding: 40px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 40px -10px rgba(102, 126, 234, 0.4);
+    }
+
+    .welcome-hero-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+    }
+
+    .welcome-greeting {
+        font-size: 16px;
+        opacity: 0.9;
+        margin-bottom: 4px;
+    }
+
+    .welcome-name {
+        font-size: 36px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        color: white;
+    }
+
+    .welcome-subtitle {
+        font-size: 16px;
+        opacity: 0.85;
+        margin: 0;
+    }
+
+    .welcome-actions {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .streak-widget {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 16px 24px;
+        border-radius: 16px;
+        backdrop-filter: blur(10px);
+    }
+
+    .streak-flame {
+        font-size: 36px;
+        animation: flame-flicker 1s infinite alternate;
+    }
+
+    @keyframes flame-flicker {
+        from { transform: scale(1) rotate(-5deg); }
+        to { transform: scale(1.1) rotate(5deg); }
+    }
+
+    .streak-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .streak-count {
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .streak-label {
+        font-size: 12px;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-outline-light {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-outline-light:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: white;
+        transform: translateY(-2px);
+    }
+
+    .welcome-decoration {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 50%;
+        pointer-events: none;
+    }
+
+    .decoration-circle {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .circle-1 {
+        width: 200px;
+        height: 200px;
+        top: -50px;
+        right: -50px;
+    }
+
+    .circle-2 {
+        width: 150px;
+        height: 150px;
+        bottom: -30px;
+        right: 100px;
+    }
+
+    .circle-3 {
+        width: 80px;
+        height: 80px;
+        top: 40%;
+        right: 30%;
+    }
+
+    /* Continue Learning Card */
+    .continue-learning-card {
+        background: white;
+        border-radius: 20px;
+        padding: 24px 32px;
+        box-shadow: var(--shadow);
+        border-left: 5px solid var(--primary);
+    }
+
+    .continue-learning-content {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .continue-icon {
+        font-size: 40px;
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(118, 75, 162, 0.1));
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .continue-info {
+        flex: 1;
+    }
+
+    .continue-label {
+        font-size: 13px;
+        color: var(--gray);
+        margin: 0 0 4px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .continue-title {
+        font-size: 20px;
+        margin: 0 0 12px 0;
+        color: var(--dark);
+    }
+
+    .continue-progress-bar {
+        height: 8px;
+        background: var(--light);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+
+    .continue-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), #764ba2);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .continue-progress-text {
+        font-size: 13px;
+        color: var(--gray);
+    }
+
+    .continue-btn {
+        white-space: nowrap;
+        padding: 14px 28px;
+    }
+
+    /* Enhanced Stat Cards */
+    .stat-card.enhanced-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .stat-icon-time {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15));
+    }
+
+    .stat-icon-engagement {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15));
+    }
+
+    .stat-icon-progress {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15));
+    }
+
+    .stat-icon-complete {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.15));
+    }
+
+    .stat-content {
+        flex: 1;
+    }
+
+    .stat-card.enhanced-stat .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 2px;
+    }
+
+    .stat-card.enhanced-stat .stat-label {
+        font-size: 13px;
+        color: var(--gray);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .stat-trend {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .stat-trend.positive {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+
+    .stat-trend.neutral {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .stat-trend.negative {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+
+    .stat-card.enhanced-stat::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.03) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    /* Quick Access Cards */
+    .quick-access-card {
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+    }
+
+    .quick-access-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+        border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    .quick-access-icon {
+        font-size: 52px;
+        margin-bottom: 16px;
+        display: block;
+    }
+
+    /* Modal Styles */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 20px;
+        max-width: 650px;
+        width: 90%;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px 28px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px 20px 0 0;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        color: white;
+        font-size: 22px;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: white;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .modal-footer {
+        padding: 20px 28px;
+        border-top: 1px solid #eee;
+        text-align: right;
+        background: #f8fafc;
+        border-radius: 0 0 20px 20px;
+    }
+
+    .session-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        padding: 24px 28px;
+    }
+
+    .session-stat {
+        text-align: center;
+        padding: 20px 16px;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 16px;
+    }
+
+    .session-stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .session-stat-label {
+        font-size: 13px;
+        color: var(--gray);
+        margin-top: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .session-insights {
+        padding: 0 28px 24px;
+    }
+
+    .session-insights h4 {
+        margin-bottom: 12px;
+        color: var(--dark);
+    }
+
+    .session-insight {
+        background: white;
+        padding: 14px 16px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border-left: 4px solid var(--primary);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Learning Style Chart Card */
+    .chart-card canvas {
+        max-height: 250px;
+    }
+
+    /* Recommendation Cards in Dashboard */
+    .rec-card {
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .rec-card:hover {
+        transform: translateY(-6px);
+    }
+
+    /* Activity Timeline */
+    .activity-timeline {
+        padding: 16px 0;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 16px;
+        padding: 16px 0;
+        position: relative;
+    }
+
+    .activity-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 44px;
+        bottom: 0;
+        width: 2px;
+        background: var(--border);
+    }
+
+    .activity-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), #764ba2);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .activity-dot::after {
+        content: '';
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-text {
+        margin: 0 0 4px 0;
+        color: var(--dark);
+        font-size: 15px;
+    }
+
+    .activity-time {
+        font-size: 13px;
+        color: var(--gray);
+    }
+
+    /* Today's Goals */
+    .goals-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .goal-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px;
+        background: var(--light);
+        border-radius: 16px;
+        transition: all 0.3s;
+    }
+
+    .goal-item:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(118, 75, 162, 0.05));
+        transform: translateX(4px);
+    }
+
+    .goal-item.completed {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    }
+
+    .goal-item.completed .goal-checkbox {
+        background: var(--success);
+    }
+
+    .goal-item.completed .goal-icon {
+        filter: none;
+    }
+
+    .goal-checkbox {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .goal-icon {
+        font-size: 24px;
+    }
+
+    .goal-info {
+        flex: 1;
+    }
+
+    .goal-title {
+        margin: 0 0 8px 0;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .goal-progress-bar {
+        height: 6px;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .goal-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--success));
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    .goal-status {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray);
+        min-width: 70px;
+        text-align: right;
+    }
+
+    /* Responsive Fixes */
+    @media (max-width: 768px) {
+        .welcome-hero {
+            padding: 28px;
+        }
+
+        .welcome-hero-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 24px;
+        }
+
+        .welcome-name {
+            font-size: 28px;
+        }
+
+        .welcome-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .continue-learning-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .continue-btn {
+            width: 100%;
+        }
+
+        .session-stat-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .goal-item {
+            flex-wrap: wrap;
+        }
+
+        .goal-status {
+            width: 100%;
+            text-align: left;
+            margin-top: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentUserId = 1;
+    let currentSessionId = null;
+
+    // Set time-based greeting
+    function setTimeGreeting() {
+        const hour = new Date().getHours();
+        let greeting = 'morning';
+        if (hour >= 12 && hour < 17) greeting = 'afternoon';
+        else if (hour >= 17) greeting = 'evening';
+        document.getElementById('time-greeting').textContent = greeting;
+    }
+
+    // Load streak data
+    async function loadStreak() {
+        try {
+            const response = await fetch(`/api/progress/comprehensive/${currentUserId}`);
+            if (response.ok) {
+                const data = await response.json();
+                const streak = data.streak_info?.current_streak || 0;
+                document.getElementById('streak-count').textContent = streak;
+            }
+        } catch (error) {
+            console.error('Error loading streak:', error);
+        }
+    }
+
+    // Load continue learning section
+    async function loadContinueLearning() {
+        try {
+            const response = await fetch(`/api/recommendations/${currentUserId}?count=1`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.recommendations && data.recommendations.length > 0) {
+                    const course = data.recommendations[0].course;
+                    const progress = course.progress || 0;
+
+                    document.getElementById('last-course-title').textContent = course.title;
+                    document.getElementById('last-course-progress').style.width = progress + '%';
+                    document.getElementById('last-course-progress-text').textContent = Math.round(progress) + '% Complete';
+                    document.getElementById('continue-course-link').href = `/course/${course.id}`;
+                    document.getElementById('continue-learning-section').style.display = 'block';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading continue learning:', error);
+        }
+    }
+
+    // Load daily goals
+    async function loadDailyGoals() {
+        try {
+            const response = await fetch(`/api/progress/comprehensive/${currentUserId}`);
+            if (response.ok) {
+                const data = await response.json();
+                const stats = data.overall_stats || {};
+
+                // Lesson goal (1 per day)
+                const lessonsToday = stats.lessons_completed_today || 0;
+                const lessonProgress = Math.min(lessonsToday / 1 * 100, 100);
+                document.getElementById('goal-lesson-progress').style.width = lessonProgress + '%';
+                document.getElementById('goal-lesson-status').textContent = `${Math.min(lessonsToday, 1)}/1`;
+                if (lessonProgress >= 100) document.getElementById('goal-lesson').classList.add('completed');
+
+                // Quiz goal
+                const quizzesToday = stats.quizzes_taken_today || 0;
+                const quizProgress = Math.min(quizzesToday / 1 * 100, 100);
+                document.getElementById('goal-quiz-progress').style.width = quizProgress + '%';
+                document.getElementById('goal-quiz-status').textContent = `${Math.min(quizzesToday, 1)}/1`;
+                if (quizProgress >= 100) document.getElementById('goal-quiz').classList.add('completed');
+
+                // Time goal (30 min)
+                const minutesToday = Math.round((stats.time_spent_today || 0) / 60);
+                const timeProgress = Math.min(minutesToday / 30 * 100, 100);
+                document.getElementById('goal-time-progress').style.width = timeProgress + '%';
+                document.getElementById('goal-time-status').textContent = `${Math.min(minutesToday, 30)}/30 min`;
+                if (timeProgress >= 100) document.getElementById('goal-time').classList.add('completed');
+            }
+        } catch (error) {
+            console.error('Error loading goals:', error);
+        }
+    }
+
+    // Get current user and start session
+    async function loadDashboard() {
+        // Set greeting based on time
+        setTimeGreeting();
+
+        try {
+            // Get current user
+            const userResponse = await fetch('/api/auth/me');
+            const userData = await userResponse.json();
+            document.getElementById('username').textContent = userData.username;
+            currentUserId = userData.id;
+
+            // Load additional features
+            loadStreak();
+            loadContinueLearning();
+            loadDailyGoals();
+
+            // Start a learning session
+            startSession();
+
+            // Load learning behavior
+            const behaviorResponse = await fetch(`/api/analytics/behavior/${currentUserId}`);
+            if (behaviorResponse.ok) {
+                const behavior = await behaviorResponse.json();
+
+                // Update stats
+                const hours = Math.floor(behavior.total_time_spent / 3600);
+                document.getElementById('total-time').textContent = hours + 'h';
+                document.getElementById('engagement-score').textContent = Math.round(behavior.engagement_score) + '%';
+                document.getElementById('courses-progress').textContent = behavior.courses_in_progress || 0;
+                document.getElementById('courses-completed').textContent = behavior.courses_completed || 0;
+            }
+
+            // Load learning style
+            const styleResponse = await fetch(`/api/analytics/learning-style/${currentUserId}`);
+            if (styleResponse.ok) {
+                const style = await styleResponse.json();
+
+                document.getElementById('data-points').textContent = style.data_points || 0;
+
+                // Create learning style badge
+                const badge = document.createElement('span');
+                badge.className = `learning-style-badge ${style.dominant_style}`;
+                badge.textContent = style.dominant_style.replace('_', ' ');
+                document.getElementById('learning-style-badge').appendChild(badge);
+
+                // Update description
+                document.getElementById('style-description').textContent = style.description || 'Keep learning to discover your style!';
+
+                // Create radar chart
+                createLearningStyleChart(style);
+            }
+
+            // Load recommendations
+            const recResponse = await fetch(`/api/recommendations/${currentUserId}?count=3`);
+            if (recResponse.ok) {
+                const recData = await recResponse.json();
+                displayRecommendations(recData.recommendations);
+            }
+
+            // Create activity chart
+            createActivityChart();
+
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+
+    // Start a learning session
+    async function startSession() {
+        try {
+            const response = await fetch('/api/behavior/session/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId, device_type: 'desktop' })
+            });
+            const data = await response.json();
+            if (data.session_id) {
+                currentSessionId = data.session_id;
+                document.getElementById('end-session-btn').style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error starting session:', error);
+        }
+    }
+
+    // End session and show summary
+    async function endSession() {
+        if (!currentSessionId) return;
+
+        try {
+            // End the session
+            await fetch('/api/behavior/session/end', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentSessionId })
+            });
+
+            // Get session summary
+            const summaryResponse = await fetch(`/api/session/${currentSessionId}/summary?user_id=${currentUserId}`);
+            const summary = await summaryResponse.json();
+
+            // Display summary in modal
+            displaySessionSummary(summary);
+            document.getElementById('session-modal').style.display = 'flex';
+
+            // Start a new session
+            startSession();
+
+        } catch (error) {
+            console.error('Error ending session:', error);
+        }
+    }
+
+    function displaySessionSummary(summary) {
+        const container = document.getElementById('session-summary-content');
+
+        let html = `
+            <div class="session-stat-grid">
+                <div class="session-stat">
+                    <div class="session-stat-value">${Math.round(summary.engagement_score || 0)}%</div>
+                    <div class="session-stat-label">Engagement</div>
+                </div>
+                <div class="session-stat">
+                    <div class="session-stat-value">${Math.round(summary.productivity_score || 0)}%</div>
+                    <div class="session-stat-label">Productivity</div>
+                </div>
+                <div class="session-stat">
+                    <div class="session-stat-value">${summary.focus_score ? Math.round(summary.focus_score) + '%' : 'N/A'}</div>
+                    <div class="session-stat-label">Focus</div>
+                </div>
+            </div>
+
+            <div class="session-stat-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="session-stat">
+                    <div class="session-stat-value">${Math.round(summary.duration_minutes || 0)}</div>
+                    <div class="session-stat-label">Minutes</div>
+                </div>
+                <div class="session-stat">
+                    <div class="session-stat-value">${summary.videos_watched || 0}</div>
+                    <div class="session-stat-label">Videos</div>
+                </div>
+                <div class="session-stat">
+                    <div class="session-stat-value">${summary.lessons_completed || 0}</div>
+                    <div class="session-stat-label">Lessons</div>
+                </div>
+                <div class="session-stat">
+                    <div class="session-stat-value">${summary.quizzes_taken || 0}</div>
+                    <div class="session-stat-label">Quizzes</div>
+                </div>
+            </div>
+        `;
+
+        if (summary.session_insights && summary.session_insights.length > 0) {
+            html += '<div class="session-insights"><h4>Insights</h4>';
+            summary.session_insights.forEach(insight => {
+                html += `<div class="session-insight">${insight}</div>`;
+            });
+            html += '</div>';
+        }
+
+        if (summary.recommendations && summary.recommendations.length > 0) {
+            html += '<div class="session-insights"><h4>Recommendations</h4>';
+            summary.recommendations.forEach(rec => {
+                html += `<div class="session-insight"><strong>${rec.message}</strong></div>`;
+            });
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
+    }
+
+    function closeSessionModal() {
+        document.getElementById('session-modal').style.display = 'none';
+    }
+
+    function createLearningStyleChart(style) {
+        const ctx = document.getElementById('learning-style-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Visual', 'Auditory', 'Kinesthetic', 'Reading/Writing'],
+                datasets: [{
+                    label: 'Your Learning Style',
+                    data: [
+                        style.visual_score || 50,
+                        style.auditory_score || 50,
+                        style.kinesthetic_score || 50,
+                        style.reading_writing_score || 50
+                    ],
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: 'rgba(99, 102, 241, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    function createActivityChart() {
+        const ctx = document.getElementById('activity-chart').getContext('2d');
+
+        // Sample data - in real app, fetch from API
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const data = [45, 60, 30, 75, 90, 40, 55];
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: 'Minutes Learned',
+                    data: data,
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    borderColor: 'rgba(99, 102, 241, 1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function displayRecommendations(recommendations) {
+        const container = document.getElementById('recommendations-container');
+        container.innerHTML = '';
+
+        if (!recommendations || recommendations.length === 0) {
+            container.innerHTML = '<p class="text-gray text-center" style="grid-column: 1 / -1;">No recommendations yet. Keep learning!</p>';
+            return;
+        }
+
+        recommendations.forEach(rec => {
+            const card = document.createElement('div');
+            card.className = 'course-card';
+            card.innerHTML = `
+            <div class="course-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                &#128218;
+            </div>
+            <div class="course-body">
+                <h3 class="course-title">${rec.course.title}</h3>
+                <p class="course-description">${rec.course.description.substring(0, 100)}...</p>
+                <div class="mb-1">
+                    <span class="recommendation-score">${Math.round(rec.score)}% Match</span>
+                </div>
+                <p class="recommendation-reasoning">${rec.reasoning}</p>
+            </div>
+        `;
+            container.appendChild(card);
+        });
+    }
+
+    // Load dashboard on page load
+    loadDashboard();
+</script>
+{% endblock %}
